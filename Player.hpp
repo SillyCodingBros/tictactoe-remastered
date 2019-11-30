@@ -17,6 +17,7 @@ public:
 };
 
 
+
 class IComputer : public Player {
 private:
   virtual void heuristic(int& grid, int& cell);
