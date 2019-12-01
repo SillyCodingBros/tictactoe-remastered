@@ -10,11 +10,24 @@ int Board::update(symbole signe, int grid, int cell){
   if (curGrid_ < 0 || curGrid_ == grid) {
     if (board_[grid*9+cell] == NOTHING) {
       board_[grid*9+cell] = signe;
-      curGrid_ = cell;
+      if (fullGrid(cell)) {
+        curGrid_ = -1;
+      }else{
+        curGrid_ = cell;
+      }
       return 1;
     }
   }
   return 0;
+}
+
+bool Board::fullGrid(int grid){
+  for (int i = 0; i < 9; i++) {
+    if (board_[grid*9+i] == NOTHING) {
+      return false;
+    }
+  }
+  return true;
 }
 
 void Board::draw(){
