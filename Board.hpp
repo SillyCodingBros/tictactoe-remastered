@@ -15,6 +15,8 @@ public:
   Board();
   bool update(symbole signe,int grid, int cell);
   bool fullGrid(int grid);
+  symbole winner(symbole signe, int grid);
+  symbole getWinner();
   void draw();
 };
 

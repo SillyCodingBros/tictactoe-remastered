@@ -18,7 +18,11 @@ void Game::launch(){
       std::cout << "you can't play in this cell" << '\n';
       continue;
     }
+    if (board_.getWinner() != NOTHING) {
+      game = false;
+    }
     board_.draw();
     playerTurn = (playerTurn+1)%2;
   }
+  std::cout << "player " << board_.getWinner() << " win the game !!" << '\n';
 }

@@ -1,12 +1,12 @@
 #include "Board.hpp"
 
-Board::Board() : curGrid_(-1) winner_(NOTHING){
+Board::Board() : curGrid_(-1), winner_(NOTHING){
   for (int i = 0; i < 81; i++) {
     board_[i] = NOTHING;
   }
 }
 
-int Board::update(symbole signe, int grid, int cell){
+bool Board::update(symbole signe, int grid, int cell){
   if (curGrid_ < 0 || curGrid_ == grid) {
     if (board_[grid*9+cell] == NOTHING) {
       board_[grid*9+cell] = signe;
@@ -15,6 +15,7 @@ int Board::update(symbole signe, int grid, int cell){
       }else{
         curGrid_ = cell;
       }
+      winner_ = winner(signe, grid);
       return 1;
     }
   }
@@ -28,6 +29,28 @@ bool Board::fullGrid(int grid){
     }
   }
   return true;
+}
+
+symbole Board::winner(symbole signe, int grid){
+  for (int i = 0; i < 3; i++) {
+    if (board_[grid*9+i*3] == signe && board_[grid*9+i*3+1] == signe && board_[grid*9+i*3+2] == signe) {
+      return signe;
+    }
+    if (board_[grid*9+i] == signe && board_[grid*9+i+3] == signe && board_[grid*9+i+6] == signe) {
+      return signe;
+    }
+  }
+  if (board_[grid*9] == signe && board_[grid*9+4] == signe && board_[grid*9+8] == signe) {
+    return signe;
+  }
+  if (board_[grid*9+2] == signe && board_[grid*9+4] == signe && board_[grid*9+6] == signe) {
+    return signe;
+  }
+  return NOTHING;
+}
+
+symbole Board::getWinner(){
+  return winner_;
 }
 
 void Board::draw(){
