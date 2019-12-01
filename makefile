@@ -11,9 +11,9 @@ LIB=
 # nom de l'executable
 EXEC= test
 # liste des fichiers d'en-tete
-HEADER= Player.hpp type.hpp Board.hpp Game.hpp
+HEADER= src/Player.hpp src/type.hpp src/Board.hpp src/Game.hpp
 # liste des fichiers sources
-SRC= main.cpp Player.cpp Board.cpp type.cpp Game.cpp
+SRC= src/main.cpp src/Player.cpp src/Board.cpp src/type.cpp src/Game.cpp
 OBJ=$(SRC:.c=.o)
 
 %.o: %.c $(HEADER)

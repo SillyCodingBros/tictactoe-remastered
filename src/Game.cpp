@@ -14,6 +14,10 @@ void Game::launch(){
   while (game) {
     std::cout << "player " << players_[playerTurn].getSymbole() << " plz enter a num_grid and a num_cell" << '\n';
     std::cin >> gridInput >> cellInput;
+    if (gridInput < 0 || gridInput > 8 || cellInput < 0 || cellInput > 8) {
+      std::cout << "bad input" << '\n';
+      continue;
+    }
     if (!players_[playerTurn].play(gridInput, cellInput)) {
       std::cout << "you can't play in this cell" << '\n';
       continue;
