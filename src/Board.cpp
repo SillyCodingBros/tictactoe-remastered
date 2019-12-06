@@ -16,10 +16,10 @@ bool Board::update(symbole signe, int grid, int cell){
         curGrid_ = cell;
       }
       winner_ = winner(signe, grid);
-      return 1;
+      return true;
     }
   }
-  return 0;
+  return false;
 }
 
 bool Board::fullGrid(int grid){
@@ -51,6 +51,10 @@ symbole Board::winner(symbole signe, int grid){
 
 symbole Board::getWinner(){
   return winner_;
+}
+
+int Board::getCurGrid(){
+  return curGrid_;
 }
 
 void Board::draw(){

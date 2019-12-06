@@ -1,26 +1,32 @@
 #include "Game.hpp"
 
-Game::Game(){
+Game::Game(gamemode mode){
   board_ = Board();
-  players_[0] = Player(CROSS, &board_);
-  players_[1] = Player(CIRCLE, &board_);
+  switch (mode) {
+    case PVP:
+      std::cout << "PVP" << '\n';
+      players_[0] = new User(CROSS, &board_);
+      players_[1] = new User(CIRCLE, &board_);
+      break;
+    case PVAUPIF:
+      std::cout << "PVC" << '\n';
+      players_[0] = new User(CROSS, &board_);
+      players_[1] = new AuPif(CIRCLE, &board_);
+      break;
+    default:
+      std::cerr << "error in gamemode" << '\n';
+      break;
+  }
 }
 
 void Game::launch(){
   bool game = true;
   int playerTurn = 0;
-  int gridInput, cellInput;
 
   while (game) {
-    std::cout << "player " << players_[playerTurn].getSymbole() << " plz enter a num_grid and a num_cell" << '\n';
-    std::cin >> gridInput >> cellInput;
-    if (gridInput < 0 || gridInput > 8 || cellInput < 0 || cellInput > 8) {
-      std::cout << "bad input" << '\n';
-      continue;
-    }
-    if (!players_[playerTurn].play(gridInput, cellInput)) {
-      std::cout << "you can't play in this cell" << '\n';
-      continue;
+    if (!players_[playerTurn]->play()) {
+      std::cout << "you can't play there" << '\n';
+      continue ;
     }
     if (board_.getWinner() != NOTHING) {
       game = false;

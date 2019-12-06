@@ -17,6 +17,7 @@ public:
   bool fullGrid(int grid);
   symbole winner(symbole signe, int grid);
   symbole getWinner();
+  int getCurGrid();
   void draw();
 };
 

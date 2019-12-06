@@ -2,7 +2,7 @@
 #define GAME
 
 #include <iostream>
-#include <functional>
+#include <typeinfo>
 
 #include "Board.hpp"
 #include "Player.hpp"
@@ -10,11 +10,11 @@
 
 class Game {
 private:
-  Player players_[2];
+  Player* players_[2];
   Board board_;
 
 public:
-  Game();
+  Game(gamemode mode);
   void launch();
 };
 

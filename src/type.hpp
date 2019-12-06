@@ -7,6 +7,11 @@ typedef enum {
   CIRCLE,
 } symbole;
 
+typedef enum {
+  PVP,
+  PVAUPIF,
+} gamemode;
+
 char StoStr(symbole signe);
 
 #endif /* end of include guard: TYPE */
