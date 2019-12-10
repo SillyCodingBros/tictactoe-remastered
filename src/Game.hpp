@@ -6,6 +6,7 @@
 
 #include "Board.hpp"
 #include "Player.hpp"
+#include "Random.hpp"
 #include "type.hpp"
 
 class Game {
