@@ -9,7 +9,8 @@ typedef enum {
 
 typedef enum {
   PVP,
-  PVAUPIF,
+  PVRANDOM,
+  PVAI,
 } gamemode;
 
 char StoStr(symbole signe);
