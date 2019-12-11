@@ -17,10 +17,10 @@ LIB =
 EXEC = test.out
 
 # Liste des fichiers d'en-tête
-HEADER = src/Player.hpp src/type.hpp src/Board.hpp src/Game.hpp src/IComputer.hpp src/Random.hpp
+HEADER = src/Player.hpp src/type.hpp src/Board.hpp src/Game.hpp src/IComputer.hpp src/Random.hpp src/MinMax.hpp
 
 # Liste des fichiers sources
-SRC = src/main.cpp src/Player.cpp src/Board.cpp src/type.cpp src/Game.cpp src/IComputer.cpp src/Random.cpp
+SRC = src/main.cpp src/Player.cpp src/Board.cpp src/type.cpp src/Game.cpp src/IComputer.cpp src/Random.cpp src/MinMax.cpp
 
 OBJ = $(SRC:.c=.o)
 
