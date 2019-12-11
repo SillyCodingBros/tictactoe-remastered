@@ -1,11 +1,13 @@
 #include "MinMax.hpp"
 
+// Création d'un objet MinMax
 MinMax::MinMax(symbole signe, Board* board) : IComputer(signe, board){
   //creation des threads
   std::srand(std::time(nullptr));
   printf("Heuristic for this board : %d\n", heuristic(board));
 }
 
+// Algorithme de choix de coup minmax
 void MinMax::algorithm(int& grid, int& cell) {
   grid = board_->getCurGrid();
   if (board_->fullGrid(grid)) {
@@ -17,6 +19,7 @@ void MinMax::algorithm(int& grid, int& cell) {
   printf("Heuristic for this board : %d\n", heuristic(board_));
 }
 
+// Heuristique de l'algorithme
 int MinMax::heuristic(Board* board){
   int sum = 0;
   for (auto i=0; i < 9; ++i){
@@ -29,6 +32,8 @@ int MinMax::heuristic(Board* board){
   return sum;
 }
 
+// Retourne le poids associé à une ligne*
+//*(Somme des valeurs associées aux symboles qui la compose)
 int MinMax::evaluate_line(int line){
   //printf("line = %d\n", line);
   if (line == -1){
@@ -41,11 +46,12 @@ int MinMax::evaluate_line(int line){
     return 3;
   }
   else if (line < 0){
-    return 0;
+    return line/2;
   }
   return line;
 }
 
+// Associe une valeur à un symbole
 int MinMax::case_value(symbole cell){
   //printf("symbole = \'%d\'\n", cell);
   if (cell == getSymbole()) {
@@ -59,6 +65,7 @@ int MinMax::case_value(symbole cell){
   }
 }
 
+// Gestion des threads
 void MinMax::funcThread(){
   //fonction pour les threads
 
