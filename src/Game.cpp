@@ -11,7 +11,8 @@ Game::Game(gamemode mode){
     case PVAUPIF:
       std::cout << "PVC" << '\n';
       players_[0] = new User(CROSS, &board_);
-      players_[1] = new Random(CIRCLE, &board_);
+      //players_[1] = new Random(CIRCLE, &board_);
+      players_[1] = new MinMax(CIRCLE, &board_);
       break;
     default:
       std::cerr << "error in gamemode" << '\n';
