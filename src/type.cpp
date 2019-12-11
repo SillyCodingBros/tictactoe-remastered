@@ -1,5 +1,6 @@
 #include "type.hpp"
 
+// Retourne le caractère associé au symbole donné
 char StoStr(symbole signe){
   switch (signe) {
     case NOTHING:

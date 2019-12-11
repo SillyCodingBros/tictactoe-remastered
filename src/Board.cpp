@@ -1,11 +1,13 @@
 #include "Board.hpp"
 
+// Création du plateau de jeu originel
 Board::Board() : curGrid_(-1), winner_(NOTHING){
   for (int i = 0; i < 81; i++) {
     board_[i] = NOTHING;
   }
 }
 
+// Ajout d'un symbole dans une cellule d'une grille du plateau
 bool Board::update(symbole signe, int grid, int cell){
   if (curGrid_ < 0 || curGrid_ == grid) {
     if (board_[grid*9+cell] == NOTHING) {
@@ -22,6 +24,7 @@ bool Board::update(symbole signe, int grid, int cell){
   return false;
 }
 
+// Teste si une grille donné est pleine (non-jouable)
 bool Board::fullGrid(int grid){
   for (int i = 0; i < 9; i++) {
     if (board_[grid*9+i] == NOTHING) {
@@ -31,6 +34,7 @@ bool Board::fullGrid(int grid){
   return true;
 }
 
+// Test si un symbole donné est vainqueur sur une grille donné
 symbole Board::winner(symbole signe, int grid){
   for (int i = 0; i < 3; i++) {
     if (board_[grid*9+i*3] == signe && board_[grid*9+i*3+1] == signe && board_[grid*9+i*3+2] == signe) {
@@ -49,18 +53,22 @@ symbole Board::winner(symbole signe, int grid){
   return NOTHING;
 }
 
+// Retourne le symbole du gagnant ou NOTHING s'il n'y en a pas
 symbole Board::getWinner(){
   return winner_;
 }
 
+// Retourne la grille courrante ou -1 s'il faut en choisir une
 int Board::getCurGrid(){
   return curGrid_;
 }
 
+// Retourne le symbole présent sur le plateau à la position donnée
 symbole Board::getCell(int pos){
   return board_[pos];
 }
 
+// Affichage du plateau de jeu sur le terminal
 void Board::draw(){
   std::cout << '\n';
   std::cout << "" << StoStr(board_[0]) << "|" << StoStr(board_[1]) << "|" << StoStr(board_[2]) << "\t" << StoStr(board_[9]) << "|" << StoStr(board_[10]) << "|" << StoStr(board_[11]) << "\t" << StoStr(board_[18]) << "|" << StoStr(board_[19]) << "|" << StoStr(board_[20]) << "\n";
