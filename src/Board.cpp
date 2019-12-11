@@ -57,6 +57,10 @@ int Board::getCurGrid(){
   return curGrid_;
 }
 
+symbole Board::getCell(int pos){
+  return board_[pos];
+}
+
 void Board::draw(){
   std::cout << '\n';
   std::cout << "" << StoStr(board_[0]) << "|" << StoStr(board_[1]) << "|" << StoStr(board_[2]) << "\t" << StoStr(board_[9]) << "|" << StoStr(board_[10]) << "|" << StoStr(board_[11]) << "\t" << StoStr(board_[18]) << "|" << StoStr(board_[19]) << "|" << StoStr(board_[20]) << "\n";

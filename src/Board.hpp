@@ -18,6 +18,7 @@ public:
   symbole winner(symbole signe, int grid);
   symbole getWinner();
   int getCurGrid();
+  symbole getCell(int pos);
   void draw();
 };
 
