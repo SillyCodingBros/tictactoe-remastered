@@ -18,6 +18,8 @@ public:
 };
 
 class User : public Player{
+private:
+  void display(int* gridInput, int* cellInput, bool* cond);
 public:
   User(symbole signe, Board* board);
   bool play();
