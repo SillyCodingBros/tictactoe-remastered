@@ -1,7 +1,8 @@
 #include "Board.hpp"
 
 // Création du plateau de jeu originel
-Board::Board() : curGrid_(-1), winner_(NOTHING){
+//Board::Board() : curGrid_(-1), winner_(NOTHING){
+Board::Board() : curGrid_(-1){
   for (int i = 0; i < 81; i++) {
     board_[i] = NOTHING;
   }
@@ -17,7 +18,7 @@ bool Board::update(symbole signe, int grid, int cell){
       }else{
         curGrid_ = cell;
       }
-      winner_ = winner(signe, grid);
+      //winner_ = winner(signe, grid);
       return true;
     }
   }
@@ -29,7 +30,7 @@ bool Board::fullBoard(){
   for (auto i = 0; i < 9; ++i) {
     if (!fullGrid(i)) {
       return false;
-    }       
+    }
   }
   return true;
 }
@@ -44,6 +45,28 @@ bool Board::fullGrid(int grid){
   return true;
 }
 
+// Retourne l'état du plateau
+// Si il y a un vainqueur           --> compare : CIRCLE ou CROSS
+// Si il y a une égalité            --> TIE
+// Si la partie n'est pas terminée  --> NOTHING
+symbole Board::gameState(){
+  for (auto i = 0; i < 9; ++i){
+    for (auto j = 0; j < 8; ++j){
+      symbole compare = board_[POSSIBILITIES[0 + (j * 3)] + (i * 9)];
+      if(compare != NOTHING &&
+         compare == board_[POSSIBILITIES[1 + (j * 3)] + (i * 9)] &&
+         compare == board_[POSSIBILITIES[2 + (j * 3)] + (i * 9)]){
+        return compare;
+      }
+    }
+  }
+  if (fullBoard()) {
+    return TIE;
+  }
+  return NOTHING;
+}
+
+/*
 // Test si un symbole donné est vainqueur sur une grille donné
 symbole Board::winner(symbole signe, int grid){
   for (int i = 0; i < 3; i++) {
@@ -63,10 +86,12 @@ symbole Board::winner(symbole signe, int grid){
   return NOTHING;
 }
 
+
 // Retourne le symbole du gagnant ou NOTHING s'il n'y en a pas
 symbole Board::getWinner(){
   return winner_;
 }
+*/
 
 // Retourne la grille courrante ou -1 s'il faut en choisir une
 int Board::getCurGrid(){

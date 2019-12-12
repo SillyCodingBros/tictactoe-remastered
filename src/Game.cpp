@@ -41,11 +41,18 @@ void Game::launch(){
       std::cout << "You can't play there" << '\n';
       continue ;
     }
-    if (board_.getWinner() != NOTHING) {
+    if (board_.gameState() != NOTHING) {
       game = false;
     }
     board_.draw();
     playerTurn = (playerTurn+1)%2;
   }
-  std::cout << "Player " << board_.getWinner() << " wins the game !!" << '\n';
+
+  symbole state = board_.gameState();
+  if (state != TIE) {
+    std::cout << "Player " << state << " wins the game!" << '\n';
+  }
+  else{
+    std::cout << "It's a tie! Try again to find out who's the master" << '\n';
+  }
 }

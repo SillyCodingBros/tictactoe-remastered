@@ -9,6 +9,8 @@ char StoStr(symbole signe){
       return 'X';
     case CIRCLE:
       return 'O';
+    case TIE:
+      return '=';
     default:
       return '#';
   }

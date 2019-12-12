@@ -9,7 +9,7 @@ class Board {
 private:
   symbole board_[81];
   int curGrid_;
-  symbole winner_;
+  //symbole winner_;
   int POSSIBILITIES[24] = {0, 1, 2,
                            3, 4, 5,
                            6, 7, 8,
@@ -24,8 +24,9 @@ public:
   bool update(symbole signe,int grid, int cell);
   bool fullBoard();
   bool fullGrid(int grid);
-  symbole winner(symbole signe, int grid);
-  symbole getWinner();
+  symbole gameState();
+  //symbole winner(symbole signe, int grid);
+  //symbole getWinner();
   int getCurGrid();
   symbole getCell(int pos);
   void draw();

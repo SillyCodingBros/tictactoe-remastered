@@ -5,6 +5,7 @@ typedef enum {
   NOTHING,
   CROSS,
   CIRCLE,
+  TIE,
 } symbole;
 
 typedef enum {
