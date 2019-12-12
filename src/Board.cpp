@@ -24,6 +24,16 @@ bool Board::update(symbole signe, int grid, int cell){
   return false;
 }
 
+// Teste si le plateau est plein (non-jouable)
+bool Board::fullBoard(){
+  for (auto i = 0; i < 9; ++i) {
+    if (!fullGrid(i)) {
+      return false;
+    }       
+  }
+  return true;
+}
+
 // Teste si une grille donné est pleine (non-jouable)
 bool Board::fullGrid(int grid){
   for (int i = 0; i < 9; i++) {

@@ -14,6 +14,7 @@ private:
 public:
   Board();
   bool update(symbole signe,int grid, int cell);
+  bool fullBoard();
   bool fullGrid(int grid);
   symbole winner(symbole signe, int grid);
   symbole getWinner();
