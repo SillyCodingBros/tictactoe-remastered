@@ -5,7 +5,7 @@ CC = g++
 CFLAGS = -Wall -g
 
 # Options pour la création de l'exécutable
-FLAGS =
+FLAGS = -pthread
 
 # Add include
 INCLUDE =
