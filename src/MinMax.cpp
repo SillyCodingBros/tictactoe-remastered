@@ -8,368 +8,298 @@ MinMax::MinMax(symbole signe,
               int depth)
               : IComputer(signe, board),
                 opponent_(opponent),
-                game(true),
-                depth(depth){
+                game_(true),
+                depth_(depth){
   //creation des threads
   for (auto i = 0; i < nbThread; i++) {
-    listThread.emplace_back(&MinMax::funcThread,this,i);
+    listThread_.emplace_back(&MinMax::funcThread, this);
   }
 }
 
-// Constructeur de task
-MinMax::task::task(Board board, node* curNode, int depth, bool up) : board(board), curNode(curNode), depth(depth), up(up){
-}
 
 // Constructeur vide de task
 MinMax::task::task(){
 }
 
+
+// Constructeur de task
+MinMax::task::task(Board& board, node* curNode, int depth, bool up)
+                : board_(board), curNode_(curNode), depth_(depth), up_(up){
+}
+
+
 // Constructeur vide de node
 MinMax::node::node(){
 }
 
-MinMax::node::node(int grid,
-                  int cell,
-                  int value,
-                  bool max,
-                  node* parent)
-                  : grid(grid),
-                    cell(cell),
-                    value(value),
-                    max(max),
-                    parent(parent){
+
+// Constructeur de nouveau node
+MinMax::node::node(int grid, int cell, node* parent, int max, int min)
+                : grid_(grid), cell_(cell), parent_(parent){
+  if (parent_->max_) {
+    max_ = false;
+    value_ = min;
+  }
+  else{
+    max_ = true;
+    value_ = max;
+  }
 }
+
+
+// Retourne la grille d'un noeud
+int MinMax::node::getGrid(){
+  return grid_;
+}
+
+
+// Retourne la cellule d'un noeud
+int MinMax::node::getCell(){
+  return cell_;
+}
+
+
+// Retourne le nombre d'enfant en attente de traitement
+int MinMax::node::getWorkChild(){
+  return workChild_;
+}
+
+
+// Modifie le nombre d'enfant restant à traiter du noeud
+void MinMax::node::setWorkChild(int workChild){
+  workChild_ = workChild;
+}
+
+
+// Retourne le noeud parent d'un noeud enfant
+MinMax::node* MinMax::node::getParent(){
+  return parent_;
+}
+
 
 // Fonction pour charger les attributs du noeud originel
 void MinMax::node::loadOrigin(int minValue){
-  value = minValue;
-  max = true;
-  parent = nullptr;
+  value_ = minValue;
+  max_ = true;
+  parent_ = nullptr;
 }
 
-/*
+
+// Retourne si le noeud est min ou max
+bool MinMax::node::getMax(){
+  return max_;
+}
+
+
+// Retourne le nombre d'enfant en attente de traitement du parent
+int MinMax::node::getParentWorkChild(){
+  return parent_->workChild_;
+}
+
+
+// Gère le passage de l'heuristique au parent selon minmax
+void MinMax::node::submitWork(){
+  bool mustSubmit = false;
+
+  parent_->nodeMutex_.lock();
+
+  if (parent_->max_) {
+    if (value_ > parent_->value_) {
+      mustSubmit = true;
+    }
+  }
+  else{
+    if (value_ < parent_->value_) {
+      mustSubmit = true;
+    }
+  }
+
+  if (mustSubmit) {
+    parent_->value_ = value_;
+    if (parent_->isOrigin()) {
+      parent_->grid_ = grid_;
+      parent_->cell_ = cell_;
+    }
+  }
+
+  std::cerr << "\nparent->workChild = " << parent_->workChild_ << '\n';
+
+  parent_->workChild_ -= 1;
+
+  std::cerr << "decr parent->workChild = " << parent_->workChild_ << '\n';
+  std::cerr << "parent->grid = " << parent_->grid_ << '\n';
+  std::cerr << "parent->cell = " << parent_->cell_ << '\n';
+  std::cerr << "parent->value = " << parent_->value_ << "\n\n";
+
+  parent_->nodeMutex_.unlock();
+}
+
+
+// Modifie la valueur du noeud
+void MinMax::node::setValue(int value){
+  value_ = value;
+}
+
+
+// Détermine si le noeud est origine
+bool MinMax::node::isOrigin(){
+  if (parent_ == nullptr) {
+    return true;
+  }
+  return false;
+}
+
+
 // Algorithme de choix de coup minmax
 void MinMax::algorithm(int& grid, int& cell) {
-  //je sais pas si c'est necessaire
-  std::unique_lock<std::mutex> lock(mutex_cond_var);
-
-  for (int i = 0; i < jobDone.size(); i++) {
-    jobDone[i] = false;
-  }
   node origin;
   Board tmp = *board_;
-  origin.max = true;
-  std::vector<std::pair<int,int>> move;
-  int gridMove = tmp.getCurGrid();
-  int nbGrid = gridMove+1;
-  if (grid == -1) {
-    gridMove = 0;
-    nbGrid = 9;
-  }
-  for (; gridMove < nbGrid; gridMove++) {
-    for (int cellMove = 0; cellMove < 9; cellMove++) {
-      if (tmp.getCell(gridMove*9+cellMove) == NOTHING) {
-        move.emplace_back(gridMove,cellMove);
-      }
-    }
-  }
-  origin.workChild = move.size();
-  for (int i = 0; i < move.size(); i++) {
-    if (!tmp.update(symbole_,move[i].first,move[i].second)) {
-      std::cerr << "error IA" << '\n';
-      return ;
-    }
-    emplaceTask(tmp,&origin,depth,false);
-    std::cout << "lancement des threads" << '\n';
-  }
-  //attendre la fin des taches
-  bool done = true;
-  while (done) {
-    for (int i = 0; i < jobDone.size(); i++) {
-      if (!jobDone[i]) break ;
-      done = false;
-    }
-  }
-  grid = origin.grid;
-  cell = origin.cell;
-}
-*/
 
-// Algorithme de choix de coup minmax
-void MinMax::algorithm(int& grid, int& cell) {
-  node origin;
-  origin.loadOrigin(minValue);
-  std::vector<std::pair<int,int>> move;
-  Board boardCopie = *board_;
-  possibleMove(boardCopie, move);
-  origin.workChild = move.size();
-  for (size_t i = 0; i < move.size(); i++) {
-    Board tmp = boardCopie;
-    node* childOrigin = new node(move[i].first,
-                                move[i].second,
-                                maxValue,
-                                false,
-                                &origin);
-    tmp.update(symbole_, move[i].first, move[i].second);
-    print.lock();
-    std::cout << "origin emplace" << '\n';
-    print.unlock();
-    emplaceTask(tmp, childOrigin, depth, false);
-  }
+  origin.loadOrigin(minValue_);
+  emplaceTask(tmp, &origin, depth_, false);
   // Attente de la fin des tâches
   while (true) {
-    if (origin.workChild == 0) {
+
+/*
+    print.lock();
+    std::cerr << "stop : " << origin.getWorkChild() << " " << taskQueue_.empty() << '\n';
+    print.unlock();
+*/
+
+    if (origin.getWorkChild() == 0 && taskQueue_.empty()) {
       break;
     }
   }
-  grid = origin.grid;
-  cell = origin.cell;
+  grid = origin.getGrid();
+  cell = origin.getCell();
+
+  game_ = false;
 }
+
 
 // Ajoute une tâche à la fin de la queue
 void MinMax::pushTask(task& task){
-  print.lock();
-  std::cout << "je push" << '\n';
-  print.unlock();
-  taskMutex.lock();
-  taskQueue.push(task);
-  taskMutex.unlock();
-  print.lock();
-  std::cout << "j'ai push" << '\n';
-  print.unlock();
-  //cond_var.notify_one();
+  taskMutex_.lock();
+  taskQueue_.push(task);
+  taskMutex_.unlock();
 }
+
 
 // Construit une tâche au début de la queue
 void MinMax::emplaceTask(Board& board, node* curNode, int depth, bool up){
-  print.lock();
-  std::cout << "j'emplace" << '\n';
-  print.unlock();
-  taskMutex.lock();
-  taskQueue.emplace(board, curNode, depth, up);
-  taskMutex.unlock();
-  print.lock();
-  std::cout << "ai fini !!!!!" << '\n';
-  print.unlock();
-  //cond_var.notify_one();
+  taskMutex_.lock();
+  taskQueue_.emplace(board, curNode, depth, up);
+  taskMutex_.unlock();
 }
 
-// Gestion des threads
-void MinMax::funcThread(int id){
+// Gestion des noeuds soumis à un parent
+void MinMax::handleSubmitedWork(task& task){
+  node* node = task.curNode_;
+  if (!node->isOrigin()) {
 
-  std::unique_lock<std::mutex> lock(mutex_cond_var);
-  task task;
+    print.lock();
 
-  //boucle tant que la partie existe
-  while (game) {
-    //attendre les taches
-    while (taskQueue.empty()) {
-      //cond_var.wait(lock);
+    node->submitWork();
+
+    print.unlock();
+
+    if (node->getParentWorkChild() == 0) {
+      task.curNode_ = task.curNode_->getParent();
+      pushTask(task);
     }
-    while (!taskQueue.empty()){
-      // Récupération de la tâche à faire
-      taskMutex.lock();
-      task = taskQueue.front();
-      taskQueue.pop();
-      taskMutex.unlock();
-      if (task.up) {
-        // Remonter les résultats des feuilles jusqu'à la racine suivant minmax
-        if (task.curNode->workChild != 0) {
-          print.lock();
-          std::cout << "push parce que peut pas remonter : "
-                    << task.curNode->workChild << '\n';
-          std::cout << "queue.size = " << taskQueue.size() << '\n';
-          std::queue<MinMax::task> tmp = taskQueue;
-          while(!tmp.empty()){
-            MinMax::task taskTmp = tmp.front();
-            std::cout << "task " << " WC " << taskTmp.curNode->workChild << " val " << taskTmp.curNode->value << " max " << taskTmp.curNode->max << " depth " << taskTmp.depth << " parent " << taskTmp.curNode->parent << '\n';
-            tmp.pop();
-          }
-          print.unlock();
-          pushTask(task);
-        }else{
-          if (task.curNode->parent->max) {
-            if (task.curNode->value > task.curNode->parent->value) {
-              task.curNode->parent->value = task.curNode->value;
-            }
-          }else{
-            if (task.curNode->value < task.curNode->parent->value) {
-              task.curNode->parent->value = task.curNode->value;
-            }
-          }
-          task.curNode->parent->workChild--;
-          std::cout << "decr : " << task.curNode->parent->workChild << '\n';
-          if (task.curNode->parent->parent != nullptr) {
-            task.curNode = task.curNode->parent;
-            print.lock();
-            std::cout << "push pour remonter les nodes au parent" << '\n';
-            print.unlock();
-            assert(task.curNode->parent->workChild >= 0);
-            pushTask(task);
-          }
+  }
+}
+
+
+//Gère la construction de l'arbre (sapin) pour un noeud terminal
+void MinMax::handleTerminalNode(task& task){
+  task.curNode_->setValue(heuristic(task.board_));
+  emplaceTask(task.board_, task.curNode_, 0, true);
+}
+
+
+//Gère la construction de l'arbre (sapin) pour un noeud
+void MinMax::handleNode(task& task){
+  std::vector<std::pair<int,int>> moves;
+
+  possibleMove(task.board_, moves);
+  task.curNode_->setWorkChild(moves.size());
+
+  print.lock();
+  std::cerr << "\npossible moves number : " << moves.size() << '\n';
+  print.unlock();
+
+  for (size_t i = 0; i < moves.size(); ++i) {
+    Board tmpBoard = task.board_;
+
+    if (task.curNode_->getMax()) {
+      tmpBoard.update(symbole_, moves[i].first, moves[i].second);
+    }
+    else{
+      tmpBoard.update(opponent_, moves[i].first, moves[i].second);
+    }
+
+    print.lock();
+    std::cerr << "grid " << moves[i].first << '\n';
+    std::cerr << "cell " << moves[i].second << '\n';
+    print.unlock();
+
+    emplaceTask(tmpBoard,
+                new node(moves[i].first,
+                        moves[i].second,
+                        task.curNode_,
+                        maxValue_,
+                        minValue_),
+                task.depth_-1,
+                false);
+  }
+}
+
+
+// Gestion des threads
+void MinMax::funcThread(){
+  task task;
+  while (game_) {
+    while (!taskQueue_.empty()) {
+
+      print.lock();
+      std::cerr << "queue size = " << taskQueue_.size() << '\n';
+      print.unlock();
+
+      taskMutex_.lock();
+      task = taskQueue_.front();
+      taskQueue_.pop();
+      taskMutex_.unlock();
+
+      if (task.up_) {
+        handleSubmitedWork(task);
+      }
+      else{
+        if (task.depth_ == 0 || task.board_.gameState() != NOTHING) {
+          handleTerminalNode(task);
         }
-      }else{
-        // Construire les branches de l'arbre de profondeur n
-        if (task.board.gameState() != NOTHING || task.depth == 0){
-          // Évaluer les feuilles car la branche est terminale
-          //(game-over/depth_max)
-          task.curNode->value = heuristic(&task.board);
-          task.curNode->workChild = 0;
-          task.depth = 0;
-          task.up = true;
-          print.lock();
-          std::cout << "push pour remonter heuristic" << '\n';
-          print.unlock();
-          assert(task.curNode->workChild >= 0);
-          pushTask(task);
-        }else{
-          // La branche n'est pas terminale
-          std::vector<std::pair<int,int>> move;
-          possibleMove(task.board, move);
-          print.lock();
-          std::cout << "juste apres move.size() = " << move.size() << '\n';
-          print.unlock();
-          for (size_t i = 0; i < move.size(); i++) {
-            Board tmp = task.board;
-            node* child;
-            symbole tmpSymbol;
-            if (task.curNode->max) {
-              //enfant min
-              child = new node(task.curNode->grid,
-                              task.curNode->cell,
-                              minValue,
-                              false,
-                              task.curNode);
-              tmpSymbol = symbole_;
-            }else{
-              //enfant max
-              child = new node(task.curNode->grid,
-                              task.curNode->cell,
-                              maxValue,
-                              true,
-                              task.curNode);
-              tmpSymbol = opponent_;
-            }
-            child->workChild = move.size();
-            tmp.update(tmpSymbol, move[i].first, move[i].second);
-            print.lock();
-            std::cout << "child->workChild = " << child->workChild << '\n';
-            print.unlock();
-            assert(child->workChild >= 0);
-            emplaceTask(tmp, child, task.depth-1, false);
-            move.clear();
-          }
+        else{
+          handleNode(task);
         }
       }
     }
   }
 }
 
-/*
-// Gestion des threads
-void MinMax::funcThread(int id){
-  std::unique_lock<std::mutex> lock(mutex_cond_var);
-  task task;
-  while (game){
-    jobDone[id] = true;
-    while (taskQueue.empty()){
-      cond_var.wait(lock);
-    }
-    jobDone[id] = false;
-    while (!taskQueue.empty()) {
-      taskMutex.lock();
-      task = taskQueue.front();
-      taskQueue.pop();
-      taskMutex.unlock();
-      if (task.up) {
-        if (task.curNode->parent == nullptr) {
-          continue;
-        }
-        if (task.curNode->workChild != 0) {
-          //push la tache parce que peut pas encore traiter
-          pushTask(task);
-        }
-        task.curNode->parent->nodeMutex.lock();
-        if (task.curNode->parent->max) {
-          if (task.curNode->value > task.curNode->parent->value) {
-            task.curNode->parent->value = task.curNode->value;
-            task.curNode->parent->grid = task.curNode->grid;
-            task.curNode->parent->cell = task.curNode->cell;
-          }
-        }else{
-          if (task.curNode->value < task.curNode->parent->value) {
-            task.curNode->parent->value = task.curNode->value;
-            task.curNode->parent->grid = task.curNode->grid;
-            task.curNode->parent->cell = task.curNode->cell;
-          }
-        }
-        task.curNode->parent->workChild--;
-        task.curNode->parent->nodeMutex.unlock();
-        //push une noouvelle tache avec le parent
-        emplaceTask(task.board,task.curNode->parent,task.depth,true);
-      }
-      if (task.depth == 0) {
-        task.curNode->value = heuristic(&task.board);
-        //push une nouvelle tache pour remonter dans l'arbre
-        task.up = true;
-        pushTask(task);
-      }else{
-        node* child = new node;
-        child->parent = task.curNode;
-        if (task.curNode->max) {
-          child->max = false;
-          child->value = minValue;
-        }else{
-          child->max = true;
-          child->value = maxValue;
-        }
-        std::vector<std::pair<int,int>> move;
-        int grid = task.board.getCurGrid();
-        int nbGrid = grid + 1;
-        if (grid == -1) {
-          grid = 0;
-          nbGrid = 9;
-        }
-        for (; grid < nbGrid; grid++) {
-          for (int cell = 0; cell < 9; cell++) {
-            if (task.board.getCell(grid * 9 + cell) == NOTHING) {
-              move.emplace_back(grid,cell);
-            }
-          }
-        }
-        child->workChild = move.size();
-        for (int i = 0; i < move.size(); i++) {
-          Board tmp = task.board;
-          if (!tmp.update(symbole_,move[i].first,move[i].second)) {
-            std::cerr << "error IA" << '\n';
-            return ;
-          }
-          if (tmp.gameState() == NOTHING) {
-            //creer une tache qui continuera de creer l'arbre
-            emplaceTask(tmp,child,task.depth-1,false);
-          }else{
-            //créer une tache feuille (fin de la creation)
-            emplaceTask(tmp,child,0,false);
-          }
-        }
-      }
-    }
-  }
-}
-*/
 
 // Heuristique de l'algorithme
-int MinMax::heuristic(Board* board){
+int MinMax::heuristic(Board& board){
   int sum = 0;
   for (auto i=0; i < 9; ++i){
     for (auto j=0; j < 8; ++j){
-      sum += evaluateLine(caseValue(board->getCell(POSSIBILITIES[0 + (j * 3)] + (9 * i))) +
-                           caseValue(board->getCell(POSSIBILITIES[1 + (j * 3)] + (9 * i))) +
-                           caseValue(board->getCell(POSSIBILITIES[2 + (j * 3)] + (9 * i))));
+      sum += evaluateLine(caseValue(board.getCell(POSSIBILITIES_[0 + (j * 3)] + (9 * i))) +
+                           caseValue(board.getCell(POSSIBILITIES_[1 + (j * 3)] + (9 * i))) +
+                           caseValue(board.getCell(POSSIBILITIES_[2 + (j * 3)] + (9 * i))));
     }
   }
   return sum;
 }
+
 
 // Retourne le poids associé à une ligne*
 //*(Somme des valeurs associées aux symboles qui la compose)
@@ -379,10 +309,10 @@ int MinMax::evaluateLine(int line){
     return 0;
   }
   else if (line == 3){
-    return maxValue;
+    return maxValue_;
   }
   else if (line == -6){
-    return minValue;
+    return minValue_;
   }
   else if (line == -3){
     return 3;
@@ -392,6 +322,7 @@ int MinMax::evaluateLine(int line){
   }
   return line;
 }
+
 
 // Associe une valeur à un symbole
 int MinMax::caseValue(symbole cell){
@@ -425,7 +356,7 @@ void MinMax::possibleMove(Board& board, std::vector<std::pair<int,int>>& move){
     for (auto i = 0; i < 9; ++i){
       if (board.getCell((curGrid * 9) + i) == NOTHING){
         print.lock();
-        std::cout << "case" << curGrid << "," << i << "ok" << '\n';
+        std::cerr << "case" << curGrid << "," << i << "ok" << '\n';
         print.unlock();
         move.emplace_back(curGrid, i);
       }
