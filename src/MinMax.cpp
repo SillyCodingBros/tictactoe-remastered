@@ -171,6 +171,10 @@ void MinMax::algorithm(int& grid, int& cell) {
   node origin;
   Board tmp = *board_;
 
+  print.lock();
+  std::cerr << "Nouveau coup de l'IA" << '\n';
+  print.unlock();
+
   origin.loadOrigin(minValue_);
   emplaceTask(tmp, &origin, depth_, false);
   // Attente de la fin des tâches
@@ -189,7 +193,7 @@ void MinMax::algorithm(int& grid, int& cell) {
   grid = origin.getGrid();
   cell = origin.getCell();
 
-  game_ = false;
+  //game_ = false;
 }
 
 

@@ -39,8 +39,7 @@ void Game::launch(){
   while (game) {
     if (!players_[playerTurn]->play()) {
       std::cout << "You can't play there" << '\n';
-      //continue ;
-      break ;
+      continue ;
     }
     if (board_.gameState() != NOTHING) {
       game = false;
