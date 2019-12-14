@@ -38,11 +38,11 @@ MinMax::node::node(int grid, int cell, node* parent, int max, int min)
                 : grid_(grid), cell_(cell), parent_(parent){
   if (parent_->max_) {
     max_ = false;
-    value_ = min;
+    value_ = max;
   }
   else{
     max_ = true;
-    value_ = max;
+    value_ = min;
   }
 }
 
@@ -103,22 +103,33 @@ void MinMax::node::submitWork(){
 
   parent_->nodeMutex_.lock();
 
+  std::cerr << "\n\nparent max : " << parent_->max_
+            << " value_ : " << value_
+            << " parent_->value_ : " << parent_->value_ << '\n';
+
   if (parent_->max_) {
     if (value_ > parent_->value_) {
+      std::cerr << "\n\nC'est plus grand que le parent : " << value_ << '\n';
       mustSubmit = true;
     }
   }
   else{
     if (value_ < parent_->value_) {
+      std::cerr << "\n\nC'est plus petit que le parent : " << value_ << '\n';
       mustSubmit = true;
     }
   }
 
   if (mustSubmit) {
+    std::cerr << "Je remplace" << '\n';
     parent_->value_ = value_;
+    std::cerr << "value : " << value_ << " parent_->value_ : " << parent_->value_<< '\n';
     if (parent_->isOrigin()) {
+      std::cerr << "Replace la position" << '\n';
       parent_->grid_ = grid_;
       parent_->cell_ = cell_;
+      std::cerr << "grid : " << grid_ << " parent_->grid_ : " << parent_->grid_
+                << " cell : " << cell_<< " parent_->cell_ : " << parent_->cell_ << '\n';
     }
   }
 
@@ -138,6 +149,11 @@ void MinMax::node::submitWork(){
 // Modifie la valueur du noeud
 void MinMax::node::setValue(int value){
   value_ = value;
+}
+
+// Retourne la valueur du noeud
+int MinMax::node::getValue(){
+  return value_;
 }
 
 
@@ -214,6 +230,10 @@ void MinMax::handleSubmitedWork(task& task){
 //Gère la construction de l'arbre (sapin) pour un noeud terminal
 void MinMax::handleTerminalNode(task& task){
   task.curNode_->setValue(heuristic(task.board_));
+  print.lock();
+  std::cerr << "\nheuristic : " << heuristic(task.board_) << '\n';
+  std::cerr << "curNode->value : " << task.curNode_->getValue() << '\n';
+  print.unlock();
   emplaceTask(task.board_, task.curNode_, 0, true);
 }
 
@@ -239,10 +259,10 @@ void MinMax::handleNode(task& task){
       tmpBoard.update(opponent_, moves[i].first, moves[i].second);
     }
 
-    print.lock();
+    /*print.lock();
     std::cerr << "grid " << moves[i].first << '\n';
     std::cerr << "cell " << moves[i].second << '\n';
-    print.unlock();
+    print.unlock();*/
 
     emplaceTask(tmpBoard,
                 new node(moves[i].first,
@@ -355,9 +375,9 @@ void MinMax::possibleMove(Board& board, std::vector<std::pair<int,int>>& move){
   else {
     for (auto i = 0; i < 9; ++i){
       if (board.getCell((curGrid * 9) + i) == NOTHING){
-        print.lock();
+        /*print.lock();
         std::cerr << "case" << curGrid << "," << i << "ok" << '\n';
-        print.unlock();
+        print.unlock();*/
         move.emplace_back(curGrid, i);
       }
     }

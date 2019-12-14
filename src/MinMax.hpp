@@ -32,6 +32,7 @@ private:
     void loadOrigin(int value);
     void submitWork();
     void setValue(int value);
+    int getValue();
     bool isOrigin();
     int getParentWorkChild();
     int getWorkChild();
