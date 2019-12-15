@@ -3,13 +3,15 @@
 
 #include <thread>
 #include <mutex>
-#include <queue>
+//#include <queue>
+#include <list>
 #include <vector>
 #include <utility>
 #include <climits>
 #include <cassert>
-#include "IComputer.hpp"
+#include <chrono>
 
+#include "IComputer.hpp"
 
 class MinMax : public IComputer {
 private:
@@ -40,6 +42,7 @@ private:
     bool getMax();
     int getGrid();
     int getCell();
+    void setGrid(int grid);
     node* getParent();
   };
 
@@ -59,8 +62,10 @@ private:
 
   symbole opponent_;
   bool game_;
+  node* origin_;
+  bool end_;
   int depth_;
-  std::queue<task> taskQueue_;
+  std::list<task> taskQueue_;
   std::mutex taskMutex_;
 
   std::vector<std::thread> listThread_;

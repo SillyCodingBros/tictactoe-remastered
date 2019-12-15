@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <typeinfo>
+#include <chrono>
 
 #include "Board.hpp"
 #include "Player.hpp"
