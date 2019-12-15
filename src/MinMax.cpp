@@ -10,9 +10,12 @@ MinMax::MinMax(symbole signe,
                 opponent_(opponent),
                 game_(true),
                 depth_(depth){
-  //creation des threads
+  // Création des threads
+  std::cerr << "Création de " << nbThread << " threads" << '\n';
   for (auto i = 0; i < nbThread; i++) {
     listThread_.emplace_back(&MinMax::funcThread, this);
+    std::cerr << "ID : " << listThread_[i].get_id() << '\n';
+
   }
 }
 
@@ -52,6 +55,11 @@ int MinMax::node::getGrid(){
   return grid_;
 }
 
+// Modifie le valeur de la grille d'un noeud
+void MinMax::node::setGrid(int grid){
+  grid_ = grid;
+}
+
 
 // Retourne la cellule d'un noeud
 int MinMax::node::getCell(){
@@ -82,6 +90,7 @@ void MinMax::node::loadOrigin(int minValue){
   value_ = minValue;
   max_ = true;
   parent_ = nullptr;
+  workChild_ = 1;
 }
 
 
@@ -137,6 +146,13 @@ void MinMax::node::submitWork(){
 
   parent_->workChild_ -= 1;
 
+  if (parent_->isOrigin()) {
+    std::cerr << "PARENT IS ORIGIN!" << '\n';
+    if (parent_->workChild_ == 0) {
+      std::cerr << "END IS NEAR / NO MORE WORKING CHILD" << '\n';
+    }
+  }
+
   std::cerr << "decr parent->workChild = " << parent_->workChild_ << '\n';
   std::cerr << "parent->grid = " << parent_->grid_ << '\n';
   std::cerr << "parent->cell = " << parent_->cell_ << '\n';
@@ -176,9 +192,11 @@ void MinMax::algorithm(int& grid, int& cell) {
   print.unlock();
 
   origin.loadOrigin(minValue_);
+  origin_ = &origin;
   emplaceTask(tmp, &origin, depth_, false);
+  end_ = false;
   // Attente de la fin des tâches
-  while (true) {
+  while (!end_) {
 
 /*
     print.lock();
@@ -186,8 +204,32 @@ void MinMax::algorithm(int& grid, int& cell) {
     print.unlock();
 */
 
-    if (origin.getWorkChild() == 0 && taskQueue_.empty()) {
-      break;
+    if (
+        origin.getWorkChild() == 0
+        //&&
+        //taskQueue_.empty()
+      ) {
+
+      //print.lock();
+      std::cerr << "END OF THINGS!" << '\n';
+      end_ = true;
+      taskMutex_.lock();
+      if (!taskQueue_.empty()) {
+        std::cerr << "JE VIDE LES MEUBLES DANS ALGO!" << '\n';
+        //for (size_t i = 0; i < taskQueue_.size(); ++i) {
+          taskQueue_.clear();
+        //}
+        origin_->setWorkChild(0);
+      }
+      taskMutex_.unlock();
+      /*for (size_t i = 0; i < listThread_.size(); i++) {
+        listThread_[i].join();
+      }
+
+      std::cerr << "END OF JOIN!" << '\n';*/
+      //print.unlock();
+
+      //break;
     }
   }
   grid = origin.getGrid();
@@ -199,23 +241,90 @@ void MinMax::algorithm(int& grid, int& cell) {
 
 // Ajoute une tâche à la fin de la queue
 void MinMax::pushTask(task& task){
-  taskMutex_.lock();
-  taskQueue_.push(task);
-  taskMutex_.unlock();
+
+    taskMutex_.lock();
+
+    if (origin_->getWorkChild() != 0 && !end_) {
+
+      //taskMutex_.lock();
+
+      print.lock();
+      std::thread::id this_id = std::this_thread::get_id();
+      std::cerr << "NEW PUSH FROM "<< this_id << " :\n"
+      << "\ttask->curNode->grid = " << task.curNode_->getGrid() << '\n'
+      << "\ttask->curNode->cell = " << task.curNode_->getCell() << '\n'
+      << "\ttask->curNode->value = " << task.curNode_->getValue() << '\n'
+      << "\ttask.depth_ = " << task.depth_ << '\n'
+      << "\ttask.up_ = " << task.up_ << "\n\n";
+      print.unlock();
+
+      if (task.curNode_->getWorkChild() == 0) {
+        taskQueue_.push_front(task);
+      }
+      else{
+        taskQueue_.push_back(task);
+      }
+      //taskMutex_.unlock();
+
+    }
+
+    taskMutex_.unlock();
+
+
+
 }
 
 
 // Construit une tâche au début de la queue
 void MinMax::emplaceTask(Board& board, node* curNode, int depth, bool up){
-  taskMutex_.lock();
-  taskQueue_.emplace(board, curNode, depth, up);
-  taskMutex_.unlock();
+
+  //if (!taskQueue_.empty()) {
+    taskMutex_.lock();
+  //}
+
+  if (curNode->isOrigin()) {
+    std::cerr << "J'EMPLACE ORIGIN" << '\n';
+    //origin_ = curNode;
+  }
+
+
+
+    //if (!taskQueue_.empty() ||
+          //(curNode->isOrigin() || curNode->getParent()->isOrigin())) {
+
+      print.lock();
+      std::thread::id this_id = std::this_thread::get_id();
+      std::cerr << "NEW EMPLACE FROM "<< this_id << ":\n"
+      << "\ttask->curNode->grid = " << curNode->getGrid() << '\n'
+      << "\ttask->curNode->cell = " << curNode->getCell() << '\n'
+      << "\ttask->curNode->value = " << curNode->getValue() << '\n'
+      << "\tdepth = " << depth << '\n'
+      << "\tup = " << up << "\n\n";
+      //print.unlock();
+
+      taskQueue_.emplace_front(board, curNode, depth, up);
+
+      //print.lock();
+      std::cerr << "J'ai BIEN EMPLACE" << '\n';
+      print.unlock();
+
+      /*if(taskMutex_.try_lock()){
+        taskMutex_.unlock();
+      }
+      else{*/
+        taskMutex_.unlock();
+      //}
+
+    //}
+
+    //taskMutex_.unlock();
+
 }
 
 // Gestion des noeuds soumis à un parent
 void MinMax::handleSubmitedWork(task& task){
   node* node = task.curNode_;
-  if (!node->isOrigin()) {
+  if (!node->isOrigin() && node->getParentWorkChild() > 0) {
 
     print.lock();
 
@@ -223,7 +332,15 @@ void MinMax::handleSubmitedWork(task& task){
 
     print.unlock();
 
-    if (node->getParentWorkChild() == 0) {
+    if (
+        //node->getParentWorkChild() == 0
+        //&&
+        !node->getParent()->isOrigin()
+      ) {
+      print.lock();
+      std::cerr << "\nJE PUSH POUR FAIRE REMONTER" << '\n';
+      print.unlock();
+
       task.curNode_ = task.curNode_->getParent();
       pushTask(task);
     }
@@ -246,6 +363,10 @@ void MinMax::handleTerminalNode(task& task){
 void MinMax::handleNode(task& task){
   std::vector<std::pair<int,int>> moves;
 
+  if (task.curNode_->isOrigin()) {
+    task.curNode_->setGrid(task.board_.getCurGrid());
+  }
+
   possibleMove(task.board_, moves);
   task.curNode_->setWorkChild(moves.size());
 
@@ -256,12 +377,20 @@ void MinMax::handleNode(task& task){
   for (size_t i = 0; i < moves.size(); ++i) {
     Board tmpBoard = task.board_;
 
+    print.lock();
+    std::cerr << "\nPB THREAD " << std::this_thread::get_id() << '\n';
+    std::cerr << "PB AVEC UPDATE ?" << '\n';
+
     if (task.curNode_->getMax()) {
       tmpBoard.update(symbole_, moves[i].first, moves[i].second);
     }
     else{
       tmpBoard.update(opponent_, moves[i].first, moves[i].second);
     }
+
+    std::cerr << "PAS DE PB AVEC UPDATE !" << '\n';
+    print.unlock();
+
 
     /*print.lock();
     std::cerr << "grid " << moves[i].first << '\n';
@@ -284,29 +413,75 @@ void MinMax::handleNode(task& task){
 void MinMax::funcThread(){
   task task;
   while (game_) {
+
+    //taskMutex_.lock();
     while (!taskQueue_.empty()) {
-
+    //(origin_->getWorkChild() != 0) {
       print.lock();
-      std::cerr << "queue size = " << taskQueue_.size() << '\n';
+      std::cerr << "\nJe bloque sur le MUTEX ?"
+                << " size : " << taskQueue_.size()
+                << " originWorkChild : " << origin_->getWorkChild()
+                << " end : " << end_ << '\n';
       print.unlock();
-
       taskMutex_.lock();
-      task = taskQueue_.front();
-      taskQueue_.pop();
-      taskMutex_.unlock();
 
-      if (task.up_) {
-        handleSubmitedWork(task);
+      if (end_){
+        std::cerr << "JE VIDE LES MEUBLES !" << '\n';
+        //for (size_t i = 0; i < taskQueue_.size(); ++i) {
+          taskQueue_.clear();
+        //}
+        origin_->setWorkChild(0);
       }
-      else{
-        if (task.depth_ == 0 || task.board_.gameState() != NOTHING) {
-          handleTerminalNode(task);
+
+      if (!taskQueue_.empty()
+          &&
+          (origin_->getWorkChild() > 0)
+          &&
+          !end_){
+
+        print.lock();
+        std::cerr << "\nIAM THREAD " << std::this_thread::get_id() << '\n';
+        std::cout <<  std::this_thread::get_id() << '\n';
+        std::cerr << "queue size = " << taskQueue_.size() << "\n\n";
+        std::cout << " queue size = " << taskQueue_.size() << "\n\n";
+        //print.unlock();
+
+        //print.lock();
+        std::cout << "ORIGIN WORKCHILD : " << origin_->getWorkChild() << '\n';
+        std::cerr << "ORIGIN WORKCHILD : " << origin_->getWorkChild() << '\n';
+        std::cerr << "Je suis RENTRÉ !" << std::this_thread::get_id() << '\n';
+        //taskMutex_.lock();
+        task = taskQueue_.front();
+        taskQueue_.pop_front();
+
+        std::cerr << "J'ai PRIS UNE TÂCHE !" << '\n';
+        print.unlock();
+
+        taskMutex_.unlock();
+
+        if (task.up_) {
+          handleSubmitedWork(task);
+          //taskMutex_.unlock();
         }
         else{
-          handleNode(task);
+          if (task.depth_ == 0 || task.board_.gameState() != NOTHING) {
+            handleTerminalNode(task);
+          }
+          else{
+            handleNode(task);
+          }
         }
       }
+      else{
+        taskMutex_.unlock();
+      }
     }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    //print.lock();
+    //std::cerr << "FIN DE BOUCLE " << std::this_thread::get_id() << '\n';
+    //print.unlock();
+    //taskMutex_.unlock();
   }
 }
 
@@ -339,7 +514,7 @@ int MinMax::evaluateLine(int line){
     return minValue_;
   }
   else if (line == -3){
-    return 3;
+    return maxValue_/2;
   }
   else if (line < 0){
     return line/2;

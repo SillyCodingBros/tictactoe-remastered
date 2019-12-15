@@ -21,7 +21,7 @@ Game::Game(gamemode mode){
     case PVAI:
       std::cout << "PvAI" << '\n';
       players_[0] = new User(CROSS, &board_);
-      players_[1] = new MinMax(CIRCLE, CROSS, &board_, 1, 2);
+      players_[1] = new MinMax(CIRCLE, CROSS, &board_, 16, 6);
       std::cout << "You, player 1 will use \"O\"\n"
                 << "AI plays with \"X\"" << '\n';
       break;
@@ -37,10 +37,19 @@ void Game::launch(){
   int playerTurn = 0;
 
   while (game) {
+    auto start = std::chrono::system_clock::now();
+
     if (!players_[playerTurn]->play()) {
       std::cout << "You can't play there" << '\n';
       continue ;
     }
+    auto end = std::chrono::system_clock::now();
+    auto timer = end - start;
+
+    std::cout << "Thinking time : " <<
+    std::chrono::duration_cast<std::chrono::milliseconds>(timer).count()
+    << " ms" << '\n';
+
     if (board_.gameState() != NOTHING) {
       game = false;
     }
