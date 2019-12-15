@@ -21,9 +21,16 @@ Game::Game(gamemode mode){
     case PVAI:
       std::cout << "PvAI" << '\n';
       players_[0] = new User(CROSS, &board_);
-      players_[1] = new MinMax(CIRCLE, CROSS, &board_, 16, 6);
+      players_[1] = new MinMax(CIRCLE, CROSS, &board_,        512, 6);
       std::cout << "You, player 1 will use \"O\"\n"
                 << "AI plays with \"X\"" << '\n';
+      break;
+    case AIVAI:
+      std::cout << "PvAI" << '\n';
+      players_[0] = new MinMax(CROSS, CIRCLE, &board_,        512, 6);
+      players_[1] = new MinMax(CIRCLE, CROSS, &board_,        512, 6);
+      std::cout << "AI 1 plays with \"O\""
+                << "AI 2 plays with \"X\"" << '\n';
       break;
     default:
       std::cerr << "Error wrong gamemode : \'" << mode << "\'" << '\n';
