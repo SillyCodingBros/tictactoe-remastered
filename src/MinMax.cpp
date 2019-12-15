@@ -109,6 +109,7 @@ int MinMax::node::getParentWorkChild(){
 // Gère le passage de l'heuristique au parent selon minmax
 void MinMax::node::submitWork(){
   bool mustSubmit = false;
+  bool bestMove = false;
 
   parent_->nodeMutex_.lock();
 
@@ -117,12 +118,18 @@ void MinMax::node::submitWork(){
             << " parent_->value_ : " << parent_->value_ << '\n';
 
   if (parent_->max_) {
+    if (value_ == INT_MAX){
+      bestMove = true;
+    }
     if (value_ > parent_->value_) {
       std::cerr << "\n\nC'est plus grand que le parent : " << value_ << '\n';
       mustSubmit = true;
     }
   }
   else{
+    if (value_ == INT_MIN) {
+      bestMove = true;
+    }
     if (value_ < parent_->value_) {
       std::cerr << "\n\nC'est plus petit que le parent : " << value_ << '\n';
       mustSubmit = true;
@@ -142,9 +149,14 @@ void MinMax::node::submitWork(){
     }
   }
 
-  std::cerr << "\nparent->workChild = " << parent_->workChild_ << '\n';
+  if (bestMove) {
+    parent_->workChild_ = 0;
+  }
+  else{
+    std::cerr << "\nparent->workChild = " << parent_->workChild_ << '\n';
 
-  parent_->workChild_ -= 1;
+    parent_->workChild_ -= 1;
+  }
 
   if (parent_->isOrigin()) {
     std::cerr << "PARENT IS ORIGIN!" << '\n';
@@ -294,18 +306,21 @@ void MinMax::emplaceTask(Board& board, node* curNode, int depth, bool up){
 
       print.lock();
       std::thread::id this_id = std::this_thread::get_id();
-      std::cerr << "NEW EMPLACE FROM "<< this_id << ":\n"
-      << "\ttask->curNode->grid = " << curNode->getGrid() << '\n'
-      << "\ttask->curNode->cell = " << curNode->getCell() << '\n'
-      << "\ttask->curNode->value = " << curNode->getValue() << '\n'
-      << "\tdepth = " << depth << '\n'
-      << "\tup = " << up << "\n\n";
+      ////std::cerr << "NEW EMPLACE FROM "<< this_id << ":\n"
+      ////<< "\ttask->curNode->grid = " << curNode->getGrid() << '\n'
+      ////<< "\ttask->curNode->cell = " << curNode->getCell() << '\n'
+      ////<< "\ttask->curNode->value = " << curNode->getValue() << '\n'
+      ////<< "\tdepth = " << depth << '\n'
+      ////<< "\tup = " << up << "\n\n";
       //print.unlock();
-
-      taskQueue_.emplace_front(board, curNode, depth, up);
-
+      //if (up) {
+        //taskQueue_.emplace_back(board, curNode, depth, up);
+      //}
+      //else{
+        taskQueue_.emplace_front(board, curNode, depth, up);
+      //}
       //print.lock();
-      std::cerr << "J'ai BIEN EMPLACE" << '\n';
+      ////std::cerr << "J'ai BIEN EMPLACE" << '\n';
       print.unlock();
 
       /*if(taskMutex_.try_lock()){
@@ -326,22 +341,33 @@ void MinMax::handleSubmitedWork(task& task){
   node* node = task.curNode_;
   if (!node->isOrigin() && node->getParentWorkChild() > 0) {
 
-    print.lock();
+    if (node->getWorkChild() == 0) {
 
-    node->submitWork();
-
-    print.unlock();
-
-    if (
-        //node->getParentWorkChild() == 0
-        //&&
-        !node->getParent()->isOrigin()
-      ) {
       print.lock();
-      std::cerr << "\nJE PUSH POUR FAIRE REMONTER" << '\n';
+
+      node->submitWork();
+
       print.unlock();
 
-      task.curNode_ = task.curNode_->getParent();
+      if (
+          //node->getParentWorkChild() == 0
+          //&&
+          !node->getParent()->isOrigin()
+        ) {
+        print.lock();
+        std::cerr << "\nJE PUSH POUR FAIRE REMONTER AU TOP" << '\n';
+        print.unlock();
+
+        task.curNode_ = task.curNode_->getParent();
+        pushTask(task);
+
+      }
+
+    }
+    else{
+      print.lock();
+      std::cerr << "\nJE PUSH POUR FAIRE REMONTER AU BACK" << '\n';
+      print.unlock();
       pushTask(task);
     }
   }
@@ -352,8 +378,8 @@ void MinMax::handleSubmitedWork(task& task){
 void MinMax::handleTerminalNode(task& task){
   task.curNode_->setValue(heuristic(task.board_));
   print.lock();
-  std::cerr << "\nheuristic : " << heuristic(task.board_) << '\n';
-  std::cerr << "curNode->value : " << task.curNode_->getValue() << '\n';
+  ////std::cerr << "\nheuristic : " << heuristic(task.board_) << '\n';
+  ////std::cerr << "curNode->value : " << task.curNode_->getValue() << '\n';
   print.unlock();
   emplaceTask(task.board_, task.curNode_, 0, true);
 }
@@ -371,15 +397,15 @@ void MinMax::handleNode(task& task){
   task.curNode_->setWorkChild(moves.size());
 
   print.lock();
-  std::cerr << "\npossible moves number : " << moves.size() << '\n';
+  ////std::cerr << "\npossible moves number : " << moves.size() << '\n';
   print.unlock();
 
   for (size_t i = 0; i < moves.size(); ++i) {
     Board tmpBoard = task.board_;
 
     print.lock();
-    std::cerr << "\nPB THREAD " << std::this_thread::get_id() << '\n';
-    std::cerr << "PB AVEC UPDATE ?" << '\n';
+    ////std::cerr << "\nPB THREAD " << std::this_thread::get_id() << '\n';
+    ////std::cerr << "PB AVEC UPDATE ?" << '\n';
 
     if (task.curNode_->getMax()) {
       tmpBoard.update(symbole_, moves[i].first, moves[i].second);
@@ -388,7 +414,7 @@ void MinMax::handleNode(task& task){
       tmpBoard.update(opponent_, moves[i].first, moves[i].second);
     }
 
-    std::cerr << "PAS DE PB AVEC UPDATE !" << '\n';
+    ////std::cerr << "PAS DE PB AVEC UPDATE !" << '\n';
     print.unlock();
 
 
@@ -418,10 +444,10 @@ void MinMax::funcThread(){
     while (!taskQueue_.empty()) {
     //(origin_->getWorkChild() != 0) {
       print.lock();
-      std::cerr << "\nJe bloque sur le MUTEX ?"
-                << " size : " << taskQueue_.size()
-                << " originWorkChild : " << origin_->getWorkChild()
-                << " end : " << end_ << '\n';
+      ////std::cerr << "\nJe bloque sur le MUTEX ?"
+      ////          << " size : " << taskQueue_.size()
+      ////          << " originWorkChild : " << origin_->getWorkChild()
+      ////          << " end : " << end_ << '\n';
       print.unlock();
       taskMutex_.lock();
 
@@ -440,21 +466,21 @@ void MinMax::funcThread(){
           !end_){
 
         print.lock();
-        std::cerr << "\nIAM THREAD " << std::this_thread::get_id() << '\n';
+        ////std::cerr << "\nIAM THREAD " << std::this_thread::get_id() << '\n';
         std::cout <<  std::this_thread::get_id() << '\n';
-        std::cerr << "queue size = " << taskQueue_.size() << "\n\n";
+        ////std::cerr << "queue size = " << taskQueue_.size() << "\n\n";
         std::cout << " queue size = " << taskQueue_.size() << "\n\n";
         //print.unlock();
 
         //print.lock();
         std::cout << "ORIGIN WORKCHILD : " << origin_->getWorkChild() << '\n';
-        std::cerr << "ORIGIN WORKCHILD : " << origin_->getWorkChild() << '\n';
-        std::cerr << "Je suis RENTRÉ !" << std::this_thread::get_id() << '\n';
+        ////std::cerr << "ORIGIN WORKCHILD : " << origin_->getWorkChild() << '\n';
+        ////std::cerr << "Je suis RENTRÉ !" << std::this_thread::get_id() << '\n';
         //taskMutex_.lock();
         task = taskQueue_.front();
         taskQueue_.pop_front();
 
-        std::cerr << "J'ai PRIS UNE TÂCHE !" << '\n';
+        ////std::cerr << "J'ai PRIS UNE TÂCHE !" << '\n';
         print.unlock();
 
         taskMutex_.unlock();
