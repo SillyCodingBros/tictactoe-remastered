@@ -5,16 +5,57 @@ MinMax::MinMax(symbole signe, symbole opponent, Board* board, int nbThread, int 
               : IComputer(signe, board), opponent_(opponent), depth_(depth){
 }
 
-MinMax::Node::Node(MinMax& ia, Board& board, int depth, Node* parent) : parent_(parent){
-  std::vector<std::pair<int,int>> move;
-  depth -= 1;
-  ia.possibleMove(board,move);
-  for (size_t i = 0; i < move.size(); i++) {
-    Board& tmp = board;
-    if (depth == 0 || tmp.gameState() != NOTHING) {
-      updateMe(ia.heuristic(board));
+MinMax::Node::Node(Node* parent, int value, int nbChild, int cell, int grid) : parent_(parent), value_(value), nbChild_(nbChild), cell_(cell), grid_(grid){
+}
+
+MinMax::Node* MinMax::Node::updateMe(int value, int cell, int grid){
+  Node* result = nullptr;
+  //lock
+  //lock parent && grandParent
+  if (!parent_->parent_->test(value)) {
+    parent_->nbChild_ = 0;
+    parent_->parent_->nbChild_ -=1;
+  }
+  //unlock parent && grandParent
+  if (chemin()) {
+    result = parent_->updateMe(value,cell_,grid_);
+  }else{
+    nbChild_ -=1;
+    if (test(value)) {
+      value_ = value;
+      result = this;
+      if (parent_ == nullptr) {
+        cell_ = cell;
+        grid_ = grid;
+      }
     }
   }
+  //unlock
+  return result;
+}
+
+bool MinMax::Node::chemin(){
+  Node* tmp = this;
+  while (tmp != nullptr) {
+    if (tmp->nbChild_ == 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
+MinMax::Min::Min(Node* parent, int nbChild, int cell, int grid) : Node(parent,INT_MAX,nbChild,cell,grid){
+}
+
+bool MinMax::Min::test(int value){
+  return value_ < value;
+}
+
+MinMax::Max::Max(Node* parent, int nbChild, int cell, int grid) : Node(parent,INT_MIN,nbChild,cell,grid){
+}
+
+bool MinMax::Max::test(int value){
+  return value_ > value;
 }
 
 // Algorithme de choix de coup minmax

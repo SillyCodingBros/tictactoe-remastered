@@ -15,28 +15,28 @@ private:
 
   class Node {
   protected:
+    int cell_;
+    int grid_;
     Node* parent_;
-    int nbChild_;
     int value_;
+    int nbChild_;
   public:
-    Node (MinMax& ia, Board& board, int depth, Node* parent);
-    virtual void updateMe(int value) = 0;
-    virtual bool alphaBeta() = 0;
-    int getValue();
+    Node (Node* parent, int value, int nbChild, int cell, int grid);
+    Node* updateMe(int value, int cell, int grid);
+    virtual bool test(int value) = 0;
+    bool chemin();
   };
 
   class Min : Node{
   public:
-    Min ();
-    void updateMe(int value);
-    bool alphaBeta();
+    Min (Node* parent, int nbChild, int cell, int grid);
+    bool test(int value);
   };
 
   class Max : Node{
   public:
-    Max ();
-    void updateMe(int value);
-    bool alphaBeta();
+    Max (Node* parent, int nbChild, int cell, int grid);
+    bool test(int value);
   };
 
   /* pour minmax */
@@ -62,9 +62,10 @@ private:
                            0, 4, 8,
                            2, 4, 6};
 
-
   void algorithm(int& grid, int& cell);
   int heuristic(Board& board);
+  void createNode();
+  void updateNode();
 
   int evaluateLine(int line);
   int caseValue(symbole cell);
