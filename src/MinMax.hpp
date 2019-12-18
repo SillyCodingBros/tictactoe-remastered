@@ -3,75 +3,56 @@
 
 #include <thread>
 #include <mutex>
-//#include <queue>
-#include <list>
+#include <queue>
+#include <functional>
 #include <vector>
-#include <utility>
 #include <climits>
-#include <cassert>
-#include <chrono>
 
 #include "IComputer.hpp"
 
 class MinMax : public IComputer {
 private:
 
-  //classe pour les noeuds de l'arbre minmax
-  class node {
-  private:
-    int grid_;
-    int cell_;
-    int workChild_;
+  class Node {
+  protected:
+    Node* parent_;
+    int nbChild_;
     int value_;
-    bool max_;
-    std::mutex nodeMutex_;
-    node* parent_;
-
   public:
-
-    node();
-    node(int grid, int cell, node* parent, int max, int min);
-    void loadOrigin(int value);
-    void submitWork();
-    void setValue(int value);
+    Node (MinMax& ia, Board& board, int depth, Node* parent);
+    virtual void updateMe(int value) = 0;
+    virtual bool alphaBeta() = 0;
     int getValue();
-    bool isOrigin();
-    int getParentWorkChild();
-    int getWorkChild();
-    void setWorkChild(int workChild);
-    bool getMax();
-    int getGrid();
-    int getCell();
-    void setGrid(int grid);
-    node* getParent();
   };
 
-  //classe pour envoyer les données requisent aux taches des threads
-  class task {
+  class Min : Node{
   public:
-    Board board_;
-    node* curNode_;
-    int depth_;
-    bool up_;
-
-    task();
-    task(Board& board, node* curNode, int depth, bool up);
+    Min ();
+    void updateMe(int value);
+    bool alphaBeta();
   };
 
-  std::mutex print;
+  class Max : Node{
+  public:
+    Max ();
+    void updateMe(int value);
+    bool alphaBeta();
+  };
 
+  /* pour minmax */
   symbole opponent_;
-  bool game_;
-  node* origin_;
-  bool end_;
   int depth_;
-  std::list<task> taskQueue_;
-  std::mutex taskMutex_;
 
+  /* les threads */
   std::vector<std::thread> listThread_;
 
-  int maxValue_ = INT_MAX;
-  int minValue_ = INT_MIN;
+  /* pour les threads */
+  std::queue<std::function<void()>> taskQueue_;
+  std::mutex taskMutex_;
+
+  /* variable pour le calcule de l'heuristic */
+  int maxValue_ = 50;
+  int minValue_ = 50;
   int POSSIBILITIES_[24] = {0, 1, 2,
                            3, 4, 5,
                            6, 7, 8,
@@ -81,25 +62,14 @@ private:
                            0, 4, 8,
                            2, 4, 6};
 
+
   void algorithm(int& grid, int& cell);
-  void pushTask(task& task);
-  void emplaceTask(Board& board, node* curNode, int depth, bool up);
-  void funcThread();
-  void downTree(task& task);
-  void upTree(task& task);
-  void evaluate(task& task);
   int heuristic(Board& board);
+
   int evaluateLine(int line);
   int caseValue(symbole cell);
 
-
-  void handleSubmitedWork(task& task);
-  void handleTerminalNode(task& task);
-  void handleNode(task& task);
   void possibleMove(Board& board, std::vector<std::pair<int,int>>& move);
-
-  void branchNode(task& task);
-  void printQueue();
 
 public:
 
