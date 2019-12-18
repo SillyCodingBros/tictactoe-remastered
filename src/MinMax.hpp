@@ -15,28 +15,36 @@ private:
 
   class Node {
   protected:
-    int cell_;
-    int grid_;
     Node* parent_;
     int value_;
     int nbChild_;
+    int cell_;
+    int grid_;
   public:
-    Node (Node* parent, int value, int nbChild, int cell, int grid);
+    Node (Node* parent, int value, int cell, int grid);
     Node* updateMe(int value, int cell, int grid);
     virtual bool test(int value) = 0;
+    virtual bool isMax() = 0;
     bool chemin();
+    void setNbChild(int nbChild);
+    int getNbChild();
+    int getValue();
+    int getCell();
+    int getGrid();
   };
 
-  class Min : Node{
+  class Min : public Node{
   public:
-    Min (Node* parent, int nbChild, int cell, int grid);
+    Min (Node* parent, int cell, int grid);
     bool test(int value);
+    bool isMax();
   };
 
-  class Max : Node{
+  class Max : public Node{
   public:
-    Max (Node* parent, int nbChild, int cell, int grid);
+    Max (Node* parent, int cell, int grid);
     bool test(int value);
+    bool isMax();
   };
 
   /* pour minmax */
@@ -44,7 +52,7 @@ private:
   int depth_;
 
   /* les threads */
-  std::vector<std::thread> listThread_;
+  int nbThread_;
 
   /* pour les threads */
   std::queue<std::function<void()>> taskQueue_;
@@ -64,8 +72,9 @@ private:
 
   void algorithm(int& grid, int& cell);
   int heuristic(Board& board);
-  void createNode();
-  void updateNode();
+  void funcThread();
+  void createNode(const Board& board, int depth, Node* parent);
+  void updateNode(Node* curNode);
 
   int evaluateLine(int line);
   int caseValue(symbole cell);

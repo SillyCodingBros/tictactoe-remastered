@@ -2,12 +2,14 @@
 
 // Création d'un objet MinMax
 MinMax::MinMax(symbole signe, symbole opponent, Board* board, int nbThread, int depth)
-              : IComputer(signe, board), opponent_(opponent), depth_(depth){
+              : IComputer(signe, board), opponent_(opponent), depth_(depth), nbThread_(nbThread){
 }
 
-MinMax::Node::Node(Node* parent, int value, int nbChild, int cell, int grid) : parent_(parent), value_(value), nbChild_(nbChild), cell_(cell), grid_(grid){
+/* constructeur de Node */
+MinMax::Node::Node(Node* parent, int value, int cell, int grid) : parent_(parent), value_(value), cell_(cell), grid_(grid){
 }
 
+/* Fonction pour update le node avec une nouvelle valeur */
 MinMax::Node* MinMax::Node::updateMe(int value, int cell, int grid){
   Node* result = nullptr;
   //lock
@@ -23,17 +25,18 @@ MinMax::Node* MinMax::Node::updateMe(int value, int cell, int grid){
     nbChild_ -=1;
     if (test(value)) {
       value_ = value;
-      result = this;
       if (parent_ == nullptr) {
         cell_ = cell;
         grid_ = grid;
       }
+      result = this;
     }
   }
   //unlock
   return result;
 }
 
+/* fonction qui test si la branche actuelle est élagué */
 bool MinMax::Node::chemin(){
   Node* tmp = this;
   while (tmp != nullptr) {
@@ -44,23 +47,112 @@ bool MinMax::Node::chemin(){
   return true;
 }
 
-MinMax::Min::Min(Node* parent, int nbChild, int cell, int grid) : Node(parent,INT_MAX,nbChild,cell,grid){
+/* setter de la variable nbChild_ */
+void MinMax::Node::setNbChild(int nbChild){
+  nbChild_ = nbChild;
 }
 
+/* getter de la variable nbChild_ */
+int MinMax::Node::getNbChild(){
+  return nbChild_;
+}
+
+/* getter de la variable value_ */
+int MinMax::Node::getValue(){
+  return value_;
+}
+
+/* getter de la variable cell_ */
+int MinMax::Node::getCell(){
+  return cell_;
+}
+
+/* getter de la variable grid_ */
+int MinMax::Node::getGrid(){
+  return grid_;
+}
+
+/* constructeur de Min */
+MinMax::Min::Min(Node* parent, int cell, int grid) : Node(parent,INT_MAX,cell,grid){
+}
+
+/* test utiliser par Min */
 bool MinMax::Min::test(int value){
   return value_ < value;
 }
 
-MinMax::Max::Max(Node* parent, int nbChild, int cell, int grid) : Node(parent,INT_MIN,nbChild,cell,grid){
+/* constructeur de Max */
+MinMax::Max::Max(Node* parent, int cell, int grid) : Node(parent,INT_MIN,cell,grid){
 }
 
+/* test utiliser par Max */
 bool MinMax::Max::test(int value){
   return value_ > value;
 }
 
 // Algorithme de choix de coup minmax
 void MinMax::algorithm(int& grid, int& cell) {
+  std::vector<std::thread> listThread;
   Board tmp = *board_;
+  Max origin(nullptr,0,0);
+  createNode(tmp,depth_,&origin);
+  for (int i = 0; i < nbThread_; i++) {
+    listThread.emplace_back(&MinMax::funcThread, this);
+  }
+  while (origin.getNbChild() == 0) {
+  }
+  grid = origin.getGrid();
+  cell = origin.getCell();
+}
+
+/* Fonction des threads */
+void MinMax::funcThread() {
+  std::function<void()> task;
+
+  while (!taskQueue_.empty()) {
+    //lock queue
+    task = taskQueue_.front();
+    taskQueue_.pop();
+    //unlock queue
+    task();
+  }
+}
+
+/* Fonction de creation de Node destiner a la queue de tache a faire */
+void MinMax::createNode(const Board& board, int depth, Node* parent){
+  std::vector<std::pair<int,int>> move;
+  Board tmp = board;
+  int newDepth = depth - 1;
+  possibleMove(tmp,move);
+  parent->setNbChild(move.size());
+  for (size_t i = 0; i < move.size(); i++) {
+    tmp = board;
+    tmp.update(symbole_,move[i].first,move[i].second);
+    if (newDepth == 0 || tmp.gameState() != NOTHING) {
+      parent->updateMe(move[i].first,move[i].second,heuristic(tmp));
+    }else{
+      //lock
+      taskQueue_.push([this,tmp,newDepth,parent] {
+        Node* node;
+        if (parent->isMax()) {
+          node = new Min(parent,parent->getCell(),parent->getGrid());
+        }else{
+          node = new Max(parent,parent->getCell(),parent->getGrid());
+        }
+        this->createNode(tmp,newDepth,node);
+      });
+      //unlock
+    }
+  }
+}
+
+/* Fonction pour update les Node destiner a la queue de tache a faire */
+void MinMax::updateNode(Node* curNode){
+  curNode = curNode->updateMe(curNode->getValue(), curNode->getCell(), curNode->getGrid());
+  //push fonction new curNode
+  taskQueue_.push([this,curNode] {
+    this->updateNode(curNode);
+  });
 }
 
 // Heuristique de l'algorithme
