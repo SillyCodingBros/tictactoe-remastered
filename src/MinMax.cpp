@@ -10,23 +10,12 @@ MinMax::Node::Node(Node* parent, int value, int cell, int grid) : parent_(parent
 }
 
 /* Fonction pour update le node avec une nouvelle valeur */
-MinMax::Node* MinMax::Node::updateMe(int value, int cell, int grid){
-  Node* result = nullptr;
+void MinMax::Node::updateMe(int value, int cell, int grid){
   nodeMutex_.lock();
-  parent_->nodeMutex_.lock();
-  parent_->parent_->nodeMutex_.lock();
-  if (parent_ != nullptr && parent_->parent_ != nullptr) {
-    if (!parent_->parent_->test(value)) {
-      parent_->parent_->nbChild_ -=1;
-      parent_->nbChild_ = 0;
-    }
-  }
-  parent_->parent_->nodeMutex_.unlock();
-  parent_->nodeMutex_.unlock();
   if (chemin()) {
     if (nbChild_ == 0) {
-      if (parent_ != nullptr) {
-        result = parent_->updateMe(value,cell_,grid_);
+      if (alphaBeta()) {
+        parent_->updateMe(value,cell_,grid_);
       }
     }else{
       nbChild_ -=1;
@@ -39,11 +28,25 @@ MinMax::Node* MinMax::Node::updateMe(int value, int cell, int grid){
           cell_ = cell;
         }
       }
-      result = this;
     }
   }
-  std::cout << "next node is = " << result << '\n';
   nodeMutex_.unlock();
+}
+
+/* Fonction d'elaguage */
+bool MinMax::Node::alphaBeta(){
+  bool result = false;
+  parent_->nodeMutex_.lock();
+  parent_->parent_->nodeMutex_.lock();
+  if (parent_ != nullptr && parent_->parent_ != nullptr) {
+    if (!parent_->parent_->test(value_)) {
+      parent_->parent_->nbChild_ -=1;
+      parent_->nbChild_ = 0;
+      result = true;
+    }
+  }
+  parent_->parent_->nodeMutex_.unlock();
+  parent_->nodeMutex_.unlock();
   return result;
 }
 
@@ -150,52 +153,36 @@ void MinMax::funcThread() {
 /* Fonction de creation de Node destiner a la queue de tache a faire */
 void MinMax::createNode(const Board& board, int depth, Node* parent){
   std::vector<std::pair<int,int>> move;
-  Board tmp = board;
+  Board tempBoard = board;
   int newDepth = depth - 1;
-  possibleMove(tmp,move);
+  possibleMove(tempBoard,move);
   parent->setNbChild(move.size());
   for (size_t i = 0; i < move.size(); i++) {
-    tmp = board;
+    tempBoard = board;
     if (parent->isMax()) {
-      tmp.update(symbole_,move[i].first,move[i].second);
+      tempBoard.update(symbole_,move[i].first,move[i].second);
     }else{
-      tmp.update(opponent_,move[i].first,move[i].second);
+      tempBoard.update(opponent_,move[i].first,move[i].second);
     }
-    if (newDepth == 0 || tmp.gameState() != NOTHING) {
-      updateNode(parent->updateMe(move[i].first,move[i].second,heuristic(tmp)));
+    if (newDepth == 0 || tempBoard.gameState() != NOTHING) {
+      parent->updateMe(move[i].first,move[i].second,heuristic(tempBoard));
     }else{
       taskMutex_.lock();
-      taskQueue_.push([this,tmp,newDepth,parent] {
+      taskQueue_.push([this,tempBoard,newDepth,parent] {
         Node* node;
+        Board debug = tempBoard;
         if (parent->isMax()) {
           node = new Min(parent,parent->getCell(),parent->getGrid());
         }else{
           node = new Max(parent,parent->getCell(),parent->getGrid());
         }
+        debug.draw();
         std::cout << "node :" << node << '\n';
         std::cout << "\t-value : " << node->getValue() << '\n';
-        this->createNode(tmp,newDepth,node);
+        this->createNode(tempBoard,newDepth,node);
       });
       taskMutex_.unlock();
     }
-  }
-}
-
-/* Fonction pour update les Node destiner a la queue de tache a faire */
-void MinMax::updateNode(Node* curNode){
-  std::cout << "node in traitment : " << curNode << '\n';
-  if (curNode != nullptr) {
-    return ;
-  }
-  curNode = curNode->updateMe(curNode->getValue(), curNode->getCell(), curNode->getGrid());
-  std::cout << "next node traitment : " << curNode << '\n';
-  if (curNode != nullptr) {
-    std::cout << "pushing " << curNode << '\n';
-    taskMutex_.lock();
-    taskQueue_.push([this,curNode] {
-      this->updateNode(curNode);
-    });
-    taskMutex_.unlock();
   }
 }
 

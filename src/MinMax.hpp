@@ -25,9 +25,10 @@ private:
     std::mutex nodeMutex_;
   public:
     Node (Node* parent, int value, int cell, int grid);
-    Node* updateMe(int value, int cell, int grid);
+    void updateMe(int value, int cell, int grid);
     virtual bool test(int value) = 0;
     virtual bool isMax() = 0;
+    bool alphaBeta();
     bool chemin();
     void setNbChild(int nbChild);
     int getNbChild();
@@ -78,7 +79,6 @@ private:
   int heuristic(Board& board);
   void funcThread();
   void createNode(const Board& board, int depth, Node* parent);
-  void updateNode(Node* curNode);
 
   int evaluateLine(int line);
   int caseValue(symbole cell);
