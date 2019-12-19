@@ -12,37 +12,49 @@ MinMax::Node::Node(Node* parent, int value, int cell, int grid) : parent_(parent
 /* Fonction pour update le node avec une nouvelle valeur */
 MinMax::Node* MinMax::Node::updateMe(int value, int cell, int grid){
   Node* result = nullptr;
-  //lock
-  //lock parent && grandParent
-  if (!parent_->parent_->test(value)) {
-    parent_->nbChild_ = 0;
-    parent_->parent_->nbChild_ -=1;
+  nodeMutex_.lock();
+  parent_->nodeMutex_.lock();
+  parent_->parent_->nodeMutex_.lock();
+  if (parent_ != nullptr && parent_->parent_ != nullptr) {
+    if (!parent_->parent_->test(value)) {
+      parent_->parent_->nbChild_ -=1;
+      parent_->nbChild_ = 0;
+    }
   }
-  //unlock parent && grandParent
+  parent_->parent_->nodeMutex_.unlock();
+  parent_->nodeMutex_.unlock();
   if (chemin()) {
-    result = parent_->updateMe(value,cell_,grid_);
-  }else{
-    nbChild_ -=1;
-    if (test(value)) {
-      value_ = value;
-      if (parent_ == nullptr) {
-        cell_ = cell;
-        grid_ = grid;
+    if (nbChild_ == 0) {
+      if (parent_ != nullptr) {
+        result = parent_->updateMe(value,cell_,grid_);
+      }
+    }else{
+      nbChild_ -=1;
+      std::cout << "node : " << this << " has " << nbChild_ << " child" << '\n';
+      if (test(value)) {
+        value_ = value;
+        if (parent_ == nullptr) {
+          std::cout << this << " is origin" << '\n';
+          grid_ = grid;
+          cell_ = cell;
+        }
       }
       result = this;
     }
   }
-  //unlock
+  std::cout << "next node is = " << result << '\n';
+  nodeMutex_.unlock();
   return result;
 }
 
 /* fonction qui test si la branche actuelle est élagué */
 bool MinMax::Node::chemin(){
-  Node* tmp = this;
+  Node* tmp = parent_;
   while (tmp != nullptr) {
     if (tmp->nbChild_ == 0) {
       return false;
     }
+    tmp = tmp->parent_;
   }
   return true;
 }
@@ -78,7 +90,12 @@ MinMax::Min::Min(Node* parent, int cell, int grid) : Node(parent,INT_MAX,cell,gr
 
 /* test utiliser par Min */
 bool MinMax::Min::test(int value){
-  return value_ < value;
+  return value_ > value;
+}
+
+/* informe que la classe est Min */
+bool MinMax::Min::isMax(){
+  return false;
 }
 
 /* constructeur de Max */
@@ -87,19 +104,29 @@ MinMax::Max::Max(Node* parent, int cell, int grid) : Node(parent,INT_MIN,cell,gr
 
 /* test utiliser par Max */
 bool MinMax::Max::test(int value){
-  return value_ > value;
+  return value_ < value;
+}
+
+/* informe que la classe est Max */
+bool MinMax::Max::isMax(){
+  return true;
 }
 
 // Algorithme de choix de coup minmax
 void MinMax::algorithm(int& grid, int& cell) {
   std::vector<std::thread> listThread;
+  job_ = true;
   Board tmp = *board_;
   Max origin(nullptr,0,0);
   createNode(tmp,depth_,&origin);
   for (int i = 0; i < nbThread_; i++) {
-    listThread.emplace_back(&MinMax::funcThread, this);
+    listThread.emplace_back(&MinMax::funcThread,this);
   }
-  while (origin.getNbChild() == 0) {
+  while (origin.getNbChild() != 0) {
+  }
+  job_ = false;
+  for (size_t i = 0; i < listThread.size(); i++) {
+    listThread[i].join();
   }
   grid = origin.getGrid();
   cell = origin.getCell();
@@ -109,12 +136,14 @@ void MinMax::algorithm(int& grid, int& cell) {
 void MinMax::funcThread() {
   std::function<void()> task;
 
-  while (!taskQueue_.empty()) {
-    //lock queue
-    task = taskQueue_.front();
-    taskQueue_.pop();
-    //unlock queue
-    task();
+  while (job_) {
+    while (!taskQueue_.empty()) {
+      taskMutex_.lock();
+      task = taskQueue_.front();
+      taskQueue_.pop();
+      taskMutex_.unlock();
+      task();
+    }
   }
 }
 
@@ -127,11 +156,15 @@ void MinMax::createNode(const Board& board, int depth, Node* parent){
   parent->setNbChild(move.size());
   for (size_t i = 0; i < move.size(); i++) {
     tmp = board;
-    tmp.update(symbole_,move[i].first,move[i].second);
-    if (newDepth == 0 || tmp.gameState() != NOTHING) {
-      parent->updateMe(move[i].first,move[i].second,heuristic(tmp));
+    if (parent->isMax()) {
+      tmp.update(symbole_,move[i].first,move[i].second);
     }else{
-      //lock
+      tmp.update(opponent_,move[i].first,move[i].second);
+    }
+    if (newDepth == 0 || tmp.gameState() != NOTHING) {
+      updateNode(parent->updateMe(move[i].first,move[i].second,heuristic(tmp)));
+    }else{
+      taskMutex_.lock();
       taskQueue_.push([this,tmp,newDepth,parent] {
         Node* node;
         if (parent->isMax()) {
@@ -139,20 +172,31 @@ void MinMax::createNode(const Board& board, int depth, Node* parent){
         }else{
           node = new Max(parent,parent->getCell(),parent->getGrid());
         }
+        std::cout << "node :" << node << '\n';
+        std::cout << "\t-value : " << node->getValue() << '\n';
         this->createNode(tmp,newDepth,node);
       });
-      //unlock
+      taskMutex_.unlock();
     }
   }
 }
 
 /* Fonction pour update les Node destiner a la queue de tache a faire */
 void MinMax::updateNode(Node* curNode){
+  std::cout << "node in traitment : " << curNode << '\n';
+  if (curNode != nullptr) {
+    return ;
+  }
   curNode = curNode->updateMe(curNode->getValue(), curNode->getCell(), curNode->getGrid());
-  //push fonction new curNode
-  taskQueue_.push([this,curNode] {
-    this->updateNode(curNode);
-  });
+  std::cout << "next node traitment : " << curNode << '\n';
+  if (curNode != nullptr) {
+    std::cout << "pushing " << curNode << '\n';
+    taskMutex_.lock();
+    taskQueue_.push([this,curNode] {
+      this->updateNode(curNode);
+    });
+    taskMutex_.unlock();
+  }
 }
 
 // Heuristique de l'algorithme

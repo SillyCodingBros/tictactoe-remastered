@@ -7,6 +7,7 @@
 #include <functional>
 #include <vector>
 #include <climits>
+#include <chrono>
 
 #include "IComputer.hpp"
 
@@ -20,6 +21,8 @@ private:
     int nbChild_;
     int cell_;
     int grid_;
+
+    std::mutex nodeMutex_;
   public:
     Node (Node* parent, int value, int cell, int grid);
     Node* updateMe(int value, int cell, int grid);
@@ -53,6 +56,7 @@ private:
 
   /* les threads */
   int nbThread_;
+  bool job_;
 
   /* pour les threads */
   std::queue<std::function<void()>> taskQueue_;
