@@ -13,21 +13,18 @@ MinMax::Node::Node(Node* parent, int value, int cell, int grid) : parent_(parent
 void MinMax::Node::updateMe(int value, int cell, int grid){
   nodeMutex_.lock();
   if (chemin()) {
-    if (nbChild_ == 0) {
-      if (alphaBeta()) {
-        parent_->updateMe(value,cell_,grid_);
+    nbChild_ -= 1;
+    if (test(value)) {
+      value_ = value;
+      if (parent_ == nullptr) {
+        grid_ = grid;
+        cell_ = cell;
+        //std::cout << "origin " << this << " vaut : " << grid_ << ", " << cell_ << " when nbChild = " << nbChild_ << '\n';
       }
-    }else{
-      nbChild_ -=1;
-      std::cout << "node : " << this << " has " << nbChild_ << " child" << '\n';
-      if (test(value)) {
-        value_ = value;
-        if (parent_ == nullptr) {
-          std::cout << this << " is origin" << '\n';
-          grid_ = grid;
-          cell_ = cell;
-        }
-      }
+    }
+    //std::cout << "node " << this << " has value = " << value_ << " with nbChild = " << nbChild_ << '\n';
+    if (nbChild_ == 0 && alphaBeta()) {
+      parent_->updateMe(value_, grid_, cell_);
     }
   }
   nodeMutex_.unlock();
@@ -36,17 +33,20 @@ void MinMax::Node::updateMe(int value, int cell, int grid){
 /* Fonction d'elaguage */
 bool MinMax::Node::alphaBeta(){
   bool result = false;
-  parent_->nodeMutex_.lock();
-  parent_->parent_->nodeMutex_.lock();
-  if (parent_ != nullptr && parent_->parent_ != nullptr) {
-    if (!parent_->parent_->test(value_)) {
-      parent_->parent_->nbChild_ -=1;
-      parent_->nbChild_ = 0;
-      result = true;
+  if (parent_ != nullptr) {
+    parent_->nodeMutex_.lock();
+    result = true;
+    if (parent_->parent_ != nullptr) {
+      parent_->parent_->nodeMutex_.lock();
+      if (!parent_->parent_->test(value_)) {
+        parent_->parent_->nbChild_ -=1;
+        parent_->nbChild_ = 0;
+        result = false;
+      }
+      parent_->parent_->nodeMutex_.unlock();
     }
+    parent_->nodeMutex_.unlock();
   }
-  parent_->parent_->nodeMutex_.unlock();
-  parent_->nodeMutex_.unlock();
   return result;
 }
 
@@ -140,45 +140,48 @@ void MinMax::funcThread() {
   std::function<void()> task;
 
   while (job_) {
-    while (!taskQueue_.empty()) {
-      taskMutex_.lock();
+    taskMutex_.lock();
+    if (!taskQueue_.empty()) {
       task = taskQueue_.front();
       taskQueue_.pop();
-      taskMutex_.unlock();
-      task();
     }
+    taskMutex_.unlock();
+    task();
   }
 }
 
 /* Fonction de creation de Node destiner a la queue de tache a faire */
 void MinMax::createNode(const Board& board, int depth, Node* parent){
-  std::vector<std::pair<int,int>> move;
+  std::vector<std::pair<int,int>> moves;
   Board tempBoard = board;
   int newDepth = depth - 1;
-  possibleMove(tempBoard,move);
-  parent->setNbChild(move.size());
-  for (size_t i = 0; i < move.size(); i++) {
+  possibleMove(tempBoard,moves);
+  parent->setNbChild(moves.size());
+  for (size_t i = 0; i < moves.size(); i++) {
+    std::pair<int,int> move = moves[i];
     tempBoard = board;
     if (parent->isMax()) {
-      tempBoard.update(symbole_,move[i].first,move[i].second);
+      tempBoard.update(symbole_,move.first,move.second);
     }else{
-      tempBoard.update(opponent_,move[i].first,move[i].second);
+      tempBoard.update(opponent_,move.first,move.second);
     }
     if (newDepth == 0 || tempBoard.gameState() != NOTHING) {
-      parent->updateMe(move[i].first,move[i].second,heuristic(tempBoard));
+      parent->updateMe(move.first,move.second,heuristic(tempBoard));
     }else{
       taskMutex_.lock();
-      taskQueue_.push([this,tempBoard,newDepth,parent] {
+      taskQueue_.push([this,tempBoard,newDepth,parent,move] {
         Node* node;
-        Board debug = tempBoard;
         if (parent->isMax()) {
-          node = new Min(parent,parent->getCell(),parent->getGrid());
+          node = new Min(parent,move.first,move.second);
         }else{
           node = new Max(parent,parent->getCell(),parent->getGrid());
         }
-        debug.draw();
+        /*
         std::cout << "node :" << node << '\n';
         std::cout << "\t-value : " << node->getValue() << '\n';
+        std::cout << "\t-cell : " << node->getCell() << '\n';
+        std::cout << "\t-grid : " << node->getGrid() << '\n';
+        */
         this->createNode(tempBoard,newDepth,node);
       });
       taskMutex_.unlock();

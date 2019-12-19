@@ -48,6 +48,7 @@ void Game::launch(){
 
     if (!players_[playerTurn]->play()) {
       std::cout << "You can't play there" << '\n';
+      //return ;
       continue ;
     }
     auto end = std::chrono::system_clock::now();
