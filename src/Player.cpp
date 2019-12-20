@@ -1,7 +1,7 @@
 #include "Player.hpp"
 
 // Création d'un objet Player
-Player::Player(symbole signe, Board* board) : symbole_(signe), board_(board){
+Player::Player(symbole signe, Board& board) : symbole_(signe), board_(board){
 }
 
 // Retourne le symbole associé au joueur
@@ -10,12 +10,12 @@ symbole Player::getSymbole(){
 }
 
 // Création d'un objet User
-User::User(symbole signe, Board* board) : Player(signe, board){
+User::User(symbole signe, Board& board) : Player(signe, board){
 }
 
 // Affichage de la demande de choix du prochain coup
 void User::display(int* gridInput, int* cellInput, bool* cond) {
-  if (board_->getCurGrid() == -1) {
+  if (board_.getCurGrid() == -1) {
     std::cout << "Player " << symbole_ << " choose a grid (1-9) and a cell (1-9)" << '\n';
     std::cout << "Enter 'number number': ";
     std::cin >> *gridInput >> *cellInput;
@@ -35,7 +35,7 @@ void User::display(int* gridInput, int* cellInput, bool* cond) {
 
 // Jouer un coup
 bool User::play(){
-  int gridInput = board_->getCurGrid();
+  int gridInput = board_.getCurGrid();
   int cellInput;
   bool cond;
 
@@ -46,5 +46,5 @@ bool User::play(){
     display(&gridInput, &cellInput, &cond);
   }
 
-  return board_->update(symbole_,gridInput,cellInput);
+  return board_.update(symbole_,gridInput,cellInput);
 }

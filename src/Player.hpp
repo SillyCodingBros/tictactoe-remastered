@@ -9,10 +9,10 @@
 class Player{
 protected:
   symbole symbole_;
-  Board* board_;
+  Board& board_;
 
 public:
-  Player(symbole signe, Board* board);
+  Player(symbole signe, Board& board);
   virtual bool play() = 0;
   symbole getSymbole();
 };
@@ -21,7 +21,7 @@ class User : public Player{
 private:
   void display(int* gridInput, int* cellInput, bool* cond);
 public:
-  User(symbole signe, Board* board);
+  User(symbole signe, Board& board);
   bool play();
 };
 

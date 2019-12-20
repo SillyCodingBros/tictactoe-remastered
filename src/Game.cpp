@@ -6,31 +6,38 @@ Game::Game(gamemode mode){
   switch (mode) {
     case PVP:
       std::cout << "PvP" << '\n';
-      players_[0] = new User(CROSS, &board_);
-      players_[1] = new User(CIRCLE, &board_);
-      std::cout << "Player 1 plays with \"O\"\n"
-                << "Player 2 plays with \"X\"" << '\n';
+      players_[0] = new User(CROSS, board_);
+      players_[1] = new User(CIRCLE, board_);
+      std::cout << "Player 1 plays with \"X\"\n"
+                << "Player 2 plays with \"O\"" << '\n';
       break;
     case PVRANDOM:
       std::cout << "PvRANDOM" << '\n';
-      players_[0] = new User(CROSS, &board_);
-      players_[1] = new Random(CIRCLE, &board_);
-      std::cout << "You, player 1 will use \"O\"\n"
-                << "Random plays with \"X\"" << '\n';
+      players_[0] = new User(CROSS, board_);
+      players_[1] = new Random(CIRCLE, board_);
+      std::cout << "You, player 1 will use \"X\"\n"
+                << "Random plays with \"O\"" << '\n';
       break;
     case PVAI:
       std::cout << "PvAI" << '\n';
-      players_[0] = new User(CROSS, &board_);
-      players_[1] = new MinMax(CIRCLE, CROSS, &board_,        512, 6);
-      std::cout << "You, player 1 will use \"O\"\n"
-                << "AI plays with \"X\"" << '\n';
+      players_[0] = new User(CROSS, board_);
+      players_[1] = new MinMax(CIRCLE, CROSS, board_,        5, 3);
+      std::cout << "You, player 1 will use \"X\"\n"
+                << "AI plays with \"O\"" << '\n';
       break;
     case AIVAI:
-      std::cout << "PvAI" << '\n';
-      players_[0] = new MinMax(CROSS, CIRCLE, &board_,        512, 6);
-      players_[1] = new MinMax(CIRCLE, CROSS, &board_,        512, 6);
-      std::cout << "AI 1 plays with \"O\""
-                << "AI 2 plays with \"X\"" << '\n';
+      std::cout << "AIvAI" << '\n';
+      players_[0] = new MinMax(CROSS, CIRCLE, board_,        5, 3);
+      players_[1] = new MinMax(CIRCLE, CROSS, board_,        5, 3);
+      std::cout << "AI 1 plays with \"X\"\n"
+                << "AI 2 plays with \"O\"" << '\n';
+      break;
+    case RANDOMVAI:
+      std::cout << "RANDOMvAI" << '\n';
+      players_[0] = new Random(CROSS, board_);
+      players_[1] = new MinMax(CIRCLE, CROSS, board_,        5, 3);
+      std::cout << "RANDOM 1 plays with \"X\"\n"
+                << "AI 2 plays with \"O\"" << '\n';
       break;
     default:
       std::cerr << "Error wrong gamemode : \'" << mode << "\'" << '\n';

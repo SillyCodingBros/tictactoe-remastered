@@ -11,7 +11,7 @@ private:
   void algorithm(int& grid, int& cell);
 
 public:
-  Random(symbole signe, Board* board);
+  Random(symbole signe, Board& board);
 };
 
 

@@ -8,7 +8,7 @@ private:
   virtual void algorithm(int& grid, int& cell) = 0;
 
 public:
-  IComputer(symbole signe, Board* board);
+  IComputer(symbole signe, Board& board);
   bool play();
 };
 
