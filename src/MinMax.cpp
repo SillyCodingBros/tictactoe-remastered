@@ -64,7 +64,7 @@ void MinMax::completeATask(){
 
     print_.lock();
     std::cerr << std::this_thread::get_id() << ": J'ai fais la tâche !" << '\n';
-    std::cerr << "queue size : " << taskQueue_.size() << '\n';
+    std::cerr << "queue size : " << taskQueue_.size() << "\n\n";
     print_.unlock();
   //}
   //else{
@@ -106,6 +106,7 @@ void FunctionForThread::funcThread(){
 
     if(minmax_->end_ && !minmax_->taskQueue_.empty()){
       for (size_t i = 0; i < minmax_->taskQueue_.size(); i++) {
+        std::cerr << "CLEAR !!!" << '\n';
         minmax_->taskQueue_.pop();
       }
     }
@@ -381,8 +382,9 @@ void MinMax::createChildren(Node* parent, const Board& board, int depth){
 
     possibleMoves(tmpBoard, moves);
     parent->nbChild_ = moves.size();
+    int tmpMaxNbChild = parent->nbChild_;
 
-    for (int i = 0; i < parent->nbChild_; ++i){
+    for (int i = 0; i < tmpMaxNbChild; ++i){
       Board nextMoveBoard = tmpBoard;
 
       int nextGrid = moves[i].first;
@@ -392,7 +394,7 @@ void MinMax::createChildren(Node* parent, const Board& board, int depth){
 
       print_.lock();
       //tmpBoard.draw();
-      std::cerr << "NODE: Je vais push l'enfant " << i+1 << "/" << parent->nbChild_ << '\n';
+      std::cerr << std::this_thread::get_id()  << " NODE: Je vais push l'enfant " << i+1 << "/" << tmpMaxNbChild << '\n';
       print_.unlock();
 
       //Push création des Nodes enfant
