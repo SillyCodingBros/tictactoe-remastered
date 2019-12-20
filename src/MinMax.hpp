@@ -39,8 +39,15 @@ private:
     Node(Node* parent, int value, bool max, int grid, int cell);
   };
 
+public :
+
   bool end_;
-  
+  bool game_;
+  std::mutex endMutex_;
+
+  std::mutex originMutex_;
+  Node* origin_;
+
   symbole opponent_;
   int nbThread_;
   int depth_;
@@ -62,7 +69,8 @@ private:
                            2, 4, 6};
 
   void algorithm(int& grid, int& cell);
-  void funcThread();
+
+  void handleThreads();
 
   int heuristic(Board& board);
   int evaluateLine(int line);
@@ -77,10 +85,21 @@ private:
 
   symbole getSymbole();
 
-public:
+//public:
 
   MinMax(symbole signe, symbole opponent, Board& board, int nbThread, int depth);
 
 };
+
+class FunctionForThread {
+public:
+  MinMax* minmax_;
+
+  void funcThread();
+
+  FunctionForThread(MinMax* minmax);
+
+};
+
 
 #endif /* end of include guard: MINMAX_HPP */

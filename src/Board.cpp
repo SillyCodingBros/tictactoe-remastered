@@ -10,8 +10,11 @@ Board::Board() : curGrid_(-1){
 
 // Ajout d'un symbole dans une cellule d'une grille du plateau
 bool Board::update(symbole signe, int grid, int cell){
+  //std::cout << "curGrid_ : " << curGrid_ << " grid : " << grid << '\n';
   if (curGrid_ < 0 || curGrid_ == grid) {
+    //std::cout << "OK 1" << '\n';
     if (board_[grid*9+cell] == NOTHING) {
+      //std::cout << "OK 2" << '\n';
       board_[grid*9+cell] = signe;
       if (fullGrid(cell)) {
         curGrid_ = -1;

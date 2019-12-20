@@ -5,9 +5,24 @@ std::mutex print_;
 // Constructeur de MinMax
 MinMax::MinMax(symbole signe, symbole opponent, Board& board, int nbThread, int depth)
               :   IComputer(signe, board),
+                  game_(true),
                   opponent_(opponent),
                   nbThread_(nbThread),
                   depth_(depth)
+{
+
+  std::cerr << end_ << " Création de " << nbThread_ << " threads" << '\n';
+  for (auto i = 0; i < nbThread_; i++) {
+    auto ptr = new FunctionForThread(this);
+    threads_.emplace_back(&FunctionForThread::funcThread, ptr);
+    std::cerr << "ID : " << threads_[i].get_id() << '\n';
+  }
+  std::cerr << "threads_.size() : " << threads_.size() << '\n';
+
+}
+
+// Constructeur de FunctionForThread
+FunctionForThread::FunctionForThread(MinMax* minmax):minmax_(minmax)
 {
 
 }
@@ -26,8 +41,8 @@ void MinMax::pushTask(std::function<void()> task){
 
 // Réalise une tâche de la queue
 void MinMax::completeATask(){
-  taskMutex_.lock();
-  if (!taskQueue_.empty()) {
+  //taskMutex_.lock();
+  //if (!taskQueue_.empty()) {
     assert(taskQueue_.size() > 0);
 
     print_.lock();
@@ -51,10 +66,10 @@ void MinMax::completeATask(){
     std::cerr << std::this_thread::get_id() << ": J'ai fais la tâche !" << '\n';
     std::cerr << "queue size : " << taskQueue_.size() << '\n';
     print_.unlock();
-  }
-  else{
-    taskMutex_.unlock();
-  }
+  //}
+  //else{
+  //  taskMutex_.unlock();
+  //}
 }
 
 /*
@@ -85,10 +100,56 @@ void MinMax::possibleMoves(Board& board, std::vector<std::pair<int,int>>& moves)
 }
 
 // Gère les threads
-void MinMax::funcThread(){
-  while (!end_) {
-    if (!taskQueue_.empty()) {
-      completeATask();
+void FunctionForThread::funcThread(){
+  while (minmax_->game_) {
+    minmax_->taskMutex_.lock();
+
+    if(minmax_->end_ && !minmax_->taskQueue_.empty()){
+      for (size_t i = 0; i < minmax_->taskQueue_.size(); i++) {
+        minmax_->taskQueue_.pop();
+      }
+    }
+
+    if (!minmax_->taskQueue_.empty()) {
+      minmax_->completeATask();
+    }
+    else{
+      minmax_->taskMutex_.unlock();
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+  }
+    /*
+    //std::cout << "Je bloque origin" << '\n';
+    minmax_->origin_->nodeMutex_.lock();
+    if(minmax_->origin_->nbChild_ == 0){
+      std::cout << "C'est la fin!" << '\n';
+      minmax_->end_ = true;
+    }
+    minmax_->origin_->nodeMutex_.unlock();
+  }
+  std::cout << "funcThread out!" << '\n';
+  */
+
+}
+
+// Gère les threads
+void MinMax::handleThreads(){
+  std::cerr << end_ << " Création de " << nbThread_ << " threads" << '\n';
+  for (auto i = 0; i < nbThread_; i++) {
+    auto ptr = new FunctionForThread(this);
+    threads_.emplace_back(&FunctionForThread::funcThread, ptr);
+    std::cerr << "ID : " << threads_[i].get_id() << '\n';
+  }
+  std::cerr << "threads_.size() : " << threads_.size() << '\n';
+
+  // Attendre les threads
+  std::cout << "threads_.size() : " << threads_.size() <<
+              "\nnbThread : " << nbThread_ << '\n';
+  assert(threads_.size() == size_t(nbThread_));
+  for (size_t i = 0; i < threads_.size(); ++i) {
+    if(threads_[i].joinable()){
+      std::cerr << "ID : " << threads_[i].get_id() << '\n';
+      threads_[i].join();
     }
   }
 }
@@ -96,48 +157,46 @@ void MinMax::funcThread(){
 // Écrit les coordonnées du coup choisit dans les arguments
 void MinMax::algorithm(int& grid, int& cell){
 
+  //if(!end_){
+
   Board tmpBoard = board_;
   int depth = depth_;
 
   print_.lock();
   std::cout << "\nNouveau coup de l'IA" << '\n';
+  std::cerr << "\nNouveau coup de l'IA" << '\n';
   print_.unlock();
 
+  //endMutex_.lock();
   end_ = false;
-
-  // Création des threads
-  std::cerr << "Création de " << nbThread_ << " threads" << '\n';
-  for (auto i = 0; i < nbThread_; i++) {
-    threads_.emplace_back(&MinMax::funcThread, this);
-    std::cerr << "ID : " << threads_[i].get_id() << '\n';
-  }
+  //endMutex_.unlock();
 
   // Ajout du noeud origine
-  Node origin(INFINITE_MIN);
-  createChildren(&origin, tmpBoard, depth);
+  origin_ = new Node(INFINITE_MIN);
+  //origin_->nodeMutex_.lock();
+  //origin_->nbChild_ = 1;
+  //origin_->nodeMutex_.unlock();
+  createChildren(origin_, tmpBoard, depth);
 
+  // Création des threads
+  //handleThreads();
 
-  while (origin.nbChild_ > 0);
-
+  while (origin_->nbChild_ > 0);
   end_ = true;
 
-  //push Node(this, nullptr, tmpBoard, depth);
 
-  // Attendre les threads
-  //std::cout << threads_.size() << '\n';
-  for (size_t i = threads_.size(); i > 0 ; --i) {
-    if(threads_[i].joinable()){
-      std::cerr << "ID : " << threads_[i].get_id() << '\n';
-      threads_[i].join();
-    }
-  }
+
 
   std::cout << "ICI !" << '\n';
 
-  std::cout << origin.grid_ << ":" << origin.cell_ << '\n';
+  std::cout << origin_->grid_ << ":" << origin_->cell_ << '\n';
 
-  grid = origin.grid_;
-  cell = origin.cell_;
+  //assert(2 == 3);
+
+  grid = origin_->grid_;
+  cell = origin_->cell_;
+
+//}
 
 }
 
@@ -265,7 +324,7 @@ void MinMax::Node::update(int value, int grid, int cell){
 
       //minmax_->pushTask([this, value]
       //                    { update(value); });
-      parent_->update(value_, grid_, cell_);
+      parent_->update(parent_->value_, parent_->grid_, parent_->cell_);
       //parent_->update(value_, grid_, cell_);
     }
     else{
@@ -286,7 +345,7 @@ void MinMax::createChildren(Node* parent, const Board& board, int depth){
   if (depth && tmpBoard.gameState() == NOTHING) {
     print_.lock();
 
-    tmpBoard.draw();
+    //tmpBoard.draw();
     ///*
     std::cerr << "Am I origin : " << (parent->parent_ == nullptr) <<
                   "\nme : " << &parent <<
