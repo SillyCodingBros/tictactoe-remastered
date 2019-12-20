@@ -3,75 +3,55 @@
 
 #include <thread>
 #include <mutex>
-//#include <queue>
-#include <list>
-#include <vector>
-#include <utility>
 #include <climits>
-#include <cassert>
+#include <vector>
+#include <queue>
+#include <functional>
 #include <chrono>
+#include <cassert>
+#include <memory>
 
 #include "IComputer.hpp"
 
-class MinMax : public IComputer {
+class MinMax : public IComputer{
 private:
 
-  //classe pour les noeuds de l'arbre minmax
-  class node {
-  private:
+  class Node {
+  public:
+
+    Node* parent_;
+    int value_;
+    int nbChild_;
+    bool max_;
     int grid_;
     int cell_;
-    int workChild_;
-    int value_;
-    bool max_;
+
     std::mutex nodeMutex_;
-    node* parent_;
 
-  public:
+  //public:
+    void update(int value, int grid, int cell);
+    //void createChildren(Node* parent, Board& board, int depth);
 
-    node();
-    node(int grid, int cell, node* parent, int max, int min);
-    void loadOrigin(int value);
-    void submitWork();
-    void setValue(int value);
-    int getValue();
-    bool isOrigin();
-    int getParentWorkChild();
-    int getWorkChild();
-    void setWorkChild(int workChild);
-    bool getMax();
+  //public:
     int getGrid();
     int getCell();
-    void setGrid(int grid);
-    node* getParent();
+    Node(int min);
+    Node(Node* parent, int value, bool max, int grid, int cell);
   };
 
-  //classe pour envoyer les données requisent aux taches des threads
-  class task {
-  public:
-    Board board_;
-    node* curNode_;
-    int depth_;
-    bool up_;
-
-    task();
-    task(Board& board, node* curNode, int depth, bool up);
-  };
-
-  std::mutex print;
-
-  symbole opponent_;
-  bool game_;
-  node* origin_;
   bool end_;
+  
+  symbole opponent_;
+  int nbThread_;
   int depth_;
-  std::list<task> taskQueue_;
+
+  std::vector<std::thread> threads_;
+  std::queue<std::function<void()>> taskQueue_;
   std::mutex taskMutex_;
 
-  std::vector<std::thread> listThread_;
+  int INFINITE_MAX = INT_MAX;
+  int INFINITE_MIN = INT_MIN;
 
-  int maxValue_ = INT_MAX;
-  int minValue_ = INT_MIN;
   int POSSIBILITIES_[24] = {0, 1, 2,
                            3, 4, 5,
                            6, 7, 8,
@@ -82,28 +62,25 @@ private:
                            2, 4, 6};
 
   void algorithm(int& grid, int& cell);
-  void pushTask(task& task);
-  void emplaceTask(Board& board, node* curNode, int depth, bool up);
   void funcThread();
-  void downTree(task& task);
-  void upTree(task& task);
-  void evaluate(task& task);
+
   int heuristic(Board& board);
   int evaluateLine(int line);
   int caseValue(symbole cell);
 
+  void createChildren(Node* parent, const Board& board, int depth);
 
-  void handleSubmitedWork(task& task);
-  void handleTerminalNode(task& task);
-  void handleNode(task& task);
-  void possibleMove(Board& board, std::vector<std::pair<int,int>>& move);
+  void possibleMoves(Board& board, std::vector<std::pair<int,int>>& moves);
 
-  void branchNode(task& task);
-  void printQueue();
+  void pushTask(std::function<void()> task);
+  void completeATask();
+
+  symbole getSymbole();
 
 public:
 
-  MinMax(symbole signe, symbole opponent, Board* board, int nbThread, int depth);
+  MinMax(symbole signe, symbole opponent, Board& board, int nbThread, int depth);
+
 };
 
 #endif /* end of include guard: MINMAX_HPP */
