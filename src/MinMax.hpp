@@ -19,13 +19,13 @@ private:
     Node* parent_;
     int value_;
     int nbChild_;
-    int cell_;
     int grid_;
+    int cell_;
 
     std::mutex nodeMutex_;
   public:
-    Node (Node* parent, int value, int cell, int grid);
-    void updateMe(int value, int cell, int grid);
+    Node (Node* parent, int value, int grid, int cell);
+    void updateMe(int value, int grid, int cell);
     virtual bool test(int value) = 0;
     virtual bool isMax() = 0;
     bool alphaBeta();
@@ -39,14 +39,14 @@ private:
 
   class Min : public Node{
   public:
-    Min (Node* parent, int cell, int grid);
+    Min (Node* parent, int grid, int cell);
     bool test(int value);
     bool isMax();
   };
 
   class Max : public Node{
   public:
-    Max (Node* parent, int cell, int grid);
+    Max (Node* parent, int grid, int cell);
     bool test(int value);
     bool isMax();
   };

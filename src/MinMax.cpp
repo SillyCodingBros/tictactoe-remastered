@@ -6,11 +6,11 @@ MinMax::MinMax(symbole signe, symbole opponent, Board* board, int nbThread, int 
 }
 
 /* constructeur de Node */
-MinMax::Node::Node(Node* parent, int value, int cell, int grid) : parent_(parent), value_(value), cell_(cell), grid_(grid){
+MinMax::Node::Node(Node* parent, int value, int grid, int cell) : parent_(parent), value_(value), grid_(grid), cell_(cell){
 }
 
 /* Fonction pour update le node avec une nouvelle valeur */
-void MinMax::Node::updateMe(int value, int cell, int grid){
+void MinMax::Node::updateMe(int value, int grid, int cell){
   nodeMutex_.lock();
   if (chemin()) {
     nbChild_ -= 1;
@@ -19,10 +19,10 @@ void MinMax::Node::updateMe(int value, int cell, int grid){
       if (parent_ == nullptr) {
         grid_ = grid;
         cell_ = cell;
-        //std::cout << "origin " << this << " vaut : " << grid_ << ", " << cell_ << " when nbChild = " << nbChild_ << '\n';
+        std::cout << "origin " << this << " vaut : " << grid_ << ", " << cell_ << " when nbChild = " << nbChild_ << '\n';
       }
     }
-    //std::cout << "node " << this << " has value = " << value_ << " with nbChild = " << nbChild_ << '\n';
+    std::cout << "node " << this << " has value = " << value_ << " with nbChild = " << nbChild_ << '\n';
     if (nbChild_ == 0 && alphaBeta()) {
       parent_->updateMe(value_, grid_, cell_);
     }
@@ -41,6 +41,7 @@ bool MinMax::Node::alphaBeta(){
       if (!parent_->parent_->test(value_)) {
         parent_->parent_->nbChild_ -=1;
         parent_->nbChild_ = 0;
+        std::cout << "elaguage success" << '\n';
         result = false;
       }
       parent_->parent_->nodeMutex_.unlock();
@@ -55,6 +56,7 @@ bool MinMax::Node::chemin(){
   Node* tmp = parent_;
   while (tmp != nullptr) {
     if (tmp->nbChild_ == 0) {
+      std::cout << "branche elagué" << '\n';
       return false;
     }
     tmp = tmp->parent_;
@@ -88,7 +90,7 @@ int MinMax::Node::getGrid(){
 }
 
 /* constructeur de Min */
-MinMax::Min::Min(Node* parent, int cell, int grid) : Node(parent,INT_MAX,cell,grid){
+MinMax::Min::Min(Node* parent, int grid, int cell) : Node(parent,INT_MAX,grid,cell){
 }
 
 /* test utiliser par Min */
@@ -126,6 +128,11 @@ void MinMax::algorithm(int& grid, int& cell) {
     listThread.emplace_back(&MinMax::funcThread,this);
   }
   while (origin.getNbChild() != 0) {
+    std::this_thread::sleep_for(std::chrono::seconds(10));
+    //std::cout << "task queue size : " << taskQueue_.size() << '\n';
+    if (taskQueue_.size() <= 1) {
+      //std::cout << "job must be done" << '\n';
+    }
   }
   job_ = false;
   for (size_t i = 0; i < listThread.size(); i++) {
@@ -152,11 +159,21 @@ void MinMax::funcThread() {
 
 /* Fonction de creation de Node destiner a la queue de tache a faire */
 void MinMax::createNode(const Board& board, int depth, Node* parent){
+  Board debug = board;
+  std::cout << "==============================================" << '\n';
+  debug.draw();
+  std::cout << "node :" << parent << '\n';
+  std::cout << "\t-depth : " << depth << '\n';
+  std::cout << "\t-value : " << parent->getValue() << '\n';
+  std::cout << "\t-cell : " << parent->getCell() << '\n';
+  std::cout << "\t-grid : " << parent->getGrid() << '\n';
   std::vector<std::pair<int,int>> moves;
   Board tempBoard = board;
   int newDepth = depth - 1;
   possibleMove(tempBoard,moves);
   parent->setNbChild(moves.size());
+  std::cout << "\t-nbChild : " << parent->getNbChild() << '\n';
+  std::cout << "==============================================" << '\n';
   for (size_t i = 0; i < moves.size(); i++) {
     std::pair<int,int> move = moves[i];
     tempBoard = board;
@@ -166,7 +183,7 @@ void MinMax::createNode(const Board& board, int depth, Node* parent){
       tempBoard.update(opponent_,move.first,move.second);
     }
     if (newDepth == 0 || tempBoard.gameState() != NOTHING) {
-      parent->updateMe(move.first,move.second,heuristic(tempBoard));
+      //parent->updateMe(heuristic(tempBoard),move.first,move.second);
     }else{
       taskMutex_.lock();
       taskQueue_.push([this,tempBoard,newDepth,parent,move] {
@@ -174,14 +191,15 @@ void MinMax::createNode(const Board& board, int depth, Node* parent){
         if (parent->isMax()) {
           node = new Min(parent,move.first,move.second);
         }else{
-          node = new Max(parent,parent->getCell(),parent->getGrid());
+          node = new Max(parent,move.first,move.second);
         }
-        /*
-        std::cout << "node :" << node << '\n';
-        std::cout << "\t-value : " << node->getValue() << '\n';
-        std::cout << "\t-cell : " << node->getCell() << '\n';
-        std::cout << "\t-grid : " << node->getGrid() << '\n';
-        */
+
+        std::cout << "create new node : " << node << " with parent : " << parent << '\n';
+        std::cout << "task queue size = " << taskQueue_.size() << '\n';
+
+        if (newDepth <= 1) {
+          std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        }
         this->createNode(tempBoard,newDepth,node);
       });
       taskMutex_.unlock();
