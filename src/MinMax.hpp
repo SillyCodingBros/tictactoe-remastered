@@ -34,8 +34,8 @@ private:
     //void createChildren(Node* parent, Board& board, int depth);
 
   //public:
-    int getGrid();
-    int getCell();
+    //int getGrid();
+    //int getCell();
     Node(int min);
     Node(Node* parent, int value, bool max, int grid, int cell);
   };

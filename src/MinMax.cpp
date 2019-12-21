@@ -36,12 +36,15 @@ symbole MinMax::getSymbole(){
 // Ajoute une tâche à la queue
 void MinMax::pushTask(std::function<void()> task, bool upORdown){
   taskMutex_.lock();
+
   if(upORdown){
     taskQueue_.push_front(task);
   }
   else{
     taskQueue_.push_back(task);
   }
+
+  //taskQueue_.push(task);
 
   taskMutex_.unlock();
 }
@@ -52,19 +55,21 @@ void MinMax::completeATask(){
   //if (!taskQueue_.empty()) {
     assert(taskQueue_.size() > 0);
 
-    /*
+     /*
 
     print_.lock();
     std::cout << "queue size : " << taskQueue_.size() << '\n';
+    std::cout << "origin_->nbChild_ : " << origin_->nbChild_ << '\n';
     //countMutex_.lock();
     //std::cout << "Threads en travail : " << count_ << '\n';
     //countMutex_.unlock();
-    std::cerr << "\n\nqueue size : " << taskQueue_.size() << '\n';
-    std::cerr << std::this_thread::get_id() << ": Je prend une tâche !" << '\n';
+    //std::cerr << "\n\nqueue size : " << taskQueue_.size() << '\n';
+    //std::cerr << std::this_thread::get_id() << ": Je prend une tâche !" << '\n';
     print_.unlock();
-    */
+     */
 
     auto task = taskQueue_.front();
+    //taskQueue_.pop();
     taskQueue_.pop_front();
     taskMutex_.unlock();
 
@@ -136,6 +141,7 @@ void MinMax::funcThread(){
     if(end_ && !taskQueue_.empty()){
       //for (size_t i = 0; i < taskQueue_.size(); i++) {
         std::cerr << "CLEAR !!!" << '\n';
+        //taskQueue_.pop();
         taskQueue_.clear();
       //}
     }
@@ -175,10 +181,14 @@ void MinMax::algorithm(int& grid, int& cell){
   Board tmpBoard = board_;
   int depth = depth_;
 
+  /*
+
   print_.lock();
   std::cout << "\nNouveau coup de l'IA" << '\n';
   std::cerr << "\nNouveau coup de l'IA" << '\n';
   print_.unlock();
+
+  */
 
   //endMutex_.lock();
   end_ = false;
@@ -200,11 +210,13 @@ void MinMax::algorithm(int& grid, int& cell){
 
 
 
-  std::cout << "ICI !" << '\n';
+  //std::cout << "ICI !" << '\n';
 
-  std::cout << origin_->grid_ << ":" << origin_->cell_ << '\n';
+  //std::cout << origin_->grid_ << ":" << origin_->cell_ << '\n';
 
   //assert(2 == 3);
+
+  //assert(tmpBoard.update(symbole_, origin_->grid_, origin_->cell_));
 
   grid = origin_->grid_;
   cell = origin_->cell_;
@@ -273,6 +285,7 @@ int MinMax::caseValue(symbole cell){
   }
 }
 
+/*
 // Retourne la grille d'un noeud
 int MinMax::Node::getGrid(){
   return grid_;
@@ -282,6 +295,7 @@ int MinMax::Node::getGrid(){
 int MinMax::Node::getCell(){
   return cell_;
 }
+*/
 
 // Met à jour ou non sa valeur
 void MinMax::Node::update(int value, int grid, int cell){
@@ -298,16 +312,38 @@ void MinMax::Node::update(int value, int grid, int cell){
   */
 
   parent_->nodeMutex_.lock();
-  bool change = false;
 
-  if (parent_->max_) {
-    if (value > parent_->value_) {
-      change = true;
+  bool change = false;
+  bool win = false;
+  bool go = false;
+
+  if (parent_->nbChild_ > 0) {
+
+    go = true;
+
+    if (parent_->max_) {
+      if (value > parent_->value_) {
+        change = true;
+      }
+      if (value >= 5000) {
+        win = true;
+      }
     }
-  }
-  else{
-    if (value < parent_->value_) {
-      change = true;
+    else{
+      if (value < parent_->value_) {
+        change = true;
+      }
+      if (value <= -5000) {
+        win = true;
+      }
+    }
+
+    if (!win) {
+      parent_->nbChild_ -= 1;
+    }
+    else{
+      //std::cout << "WIN FOUND !" << '\n';
+      parent_->nbChild_ = 0;
     }
   }
 
@@ -322,9 +358,9 @@ void MinMax::Node::update(int value, int grid, int cell){
 
     if (parent_->parent_ == nullptr) {
       /*
-      print_.lock();
-      std::cerr << "ORIGIN CHILD: Je dois UPDATE ses coordonnés" << '\n';
-      print_.unlock();
+      //print_.lock();
+      std::cout << "ORIGIN CHILD: Je dois UPDATE ses coordonnés" << '\n';
+      //print_.unlock();
       */
 
       parent_->grid_ = grid;
@@ -332,11 +368,9 @@ void MinMax::Node::update(int value, int grid, int cell){
     }
   }
 
-  parent_->nbChild_ -= 1;
+  //parent_->nodeMutex_.unlock();
 
-  parent_->nodeMutex_.unlock();
-
-  if (parent_->nbChild_ == 0) {
+  if ((parent_->nbChild_ == 0) && go) {
     //push le travail
     if (parent_->parent_ != nullptr) {
       /*
@@ -345,9 +379,8 @@ void MinMax::Node::update(int value, int grid, int cell){
       print_.unlock();
       */
 
-      //pushTask([this, value]
-      //                    { update(value); });
       parent_->update(parent_->value_, parent_->grid_, parent_->cell_);
+
       //parent_->update(value_, grid_, cell_);
     }
     else{
@@ -357,12 +390,13 @@ void MinMax::Node::update(int value, int grid, int cell){
       std::cerr << "ORIGIN: C'est la FIN !" << '\n';
       print_.unlock();
       */
-      
+
       //grid_ = parent_->grid_;
       //cell_ = parent_->cell_;
       //end_ = true;
     }
   }
+  parent_->nodeMutex_.unlock();
 }
 
 // Création de l'abre
