@@ -21,7 +21,7 @@ Game::Game(gamemode mode){
     case PVAI:
       std::cout << "PvAI" << '\n';
       players_[0] = new User(CROSS, &board_);
-      players_[1] = new MinMax(CIRCLE, CROSS, &board_,1, 4);
+      players_[1] = new MinMax(CIRCLE, CROSS, &board_,6, 7);
       std::cout << "You, player 1 will use \"O\"\n"
                 << "AI plays with \"X\"" << '\n';
       break;

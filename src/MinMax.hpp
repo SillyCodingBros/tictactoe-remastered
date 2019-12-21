@@ -28,7 +28,7 @@ private:
     void updateMe(int value, int grid, int cell);
     virtual bool test(int value) = 0;
     virtual bool isMax() = 0;
-    bool alphaBeta();
+    Node* alphaBeta();
     bool chemin();
     void setNbChild(int nbChild);
     int getNbChild();
@@ -65,7 +65,7 @@ private:
 
   /* variable pour le calcule de l'heuristic */
   int maxValue_ = 50;
-  int minValue_ = 50;
+  int minValue_ = -50;
   int POSSIBILITIES_[24] = {0, 1, 2,
                            3, 4, 5,
                            6, 7, 8,
