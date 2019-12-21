@@ -6,6 +6,7 @@
 #include <climits>
 #include <vector>
 #include <queue>
+#include <list>
 #include <functional>
 #include <chrono>
 #include <cassert>
@@ -53,8 +54,11 @@ public :
   int depth_;
 
   std::vector<std::thread> threads_;
-  std::queue<std::function<void()>> taskQueue_;
+  std::list<std::function<void()>> taskQueue_;
   std::mutex taskMutex_;
+
+  //std::mutex countMutex_;
+  //int count_;
 
   int INFINITE_MAX = INT_MAX;
   int INFINITE_MIN = INT_MIN;
@@ -71,6 +75,7 @@ public :
   void algorithm(int& grid, int& cell);
 
   void handleThreads();
+  void funcThread();
 
   int heuristic(Board& board);
   int evaluateLine(int line);
@@ -80,7 +85,7 @@ public :
 
   void possibleMoves(Board& board, std::vector<std::pair<int,int>>& moves);
 
-  void pushTask(std::function<void()> task);
+  void pushTask(std::function<void()> task, bool place);
   void completeATask();
 
   symbole getSymbole();
@@ -90,16 +95,5 @@ public :
   MinMax(symbole signe, symbole opponent, Board& board, int nbThread, int depth);
 
 };
-
-class FunctionForThread {
-public:
-  MinMax* minmax_;
-
-  void funcThread();
-
-  FunctionForThread(MinMax* minmax);
-
-};
-
 
 #endif /* end of include guard: MINMAX_HPP */
