@@ -127,14 +127,14 @@ void MinMax::algorithm(int& grid, int& cell) {
   for (int i = 0; i < nbThread_; i++) {
     listThread.emplace_back(&MinMax::funcThread,this);
   }
+  std::cerr << "nbThread" << listThread.size() << '\n';
   while (origin.getNbChild() != 0) {
-    std::this_thread::sleep_for(std::chrono::seconds(10));
-    //std::cout << "task queue size : " << taskQueue_.size() << '\n';
-    if (taskQueue_.size() <= 1) {
-      //std::cout << "job must be done" << '\n';
-    }
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    //std::cerr << "child origin : " << origin.getNbChild() << '\n';
   }
+  std::cerr << "job done" << '\n';
   job_ = false;
+  std::cerr << "list thread" << listThread.size() << '\n';
   for (size_t i = 0; i < listThread.size(); i++) {
     listThread[i].join();
   }
@@ -151,9 +151,14 @@ void MinMax::funcThread() {
     if (!taskQueue_.empty()) {
       task = taskQueue_.front();
       taskQueue_.pop();
+      taskMutex_.unlock();
+      task();
     }
-    taskMutex_.unlock();
-    task();
+    else{
+      //std::cout << "wait taskQueue or job_" << '\n';
+      taskMutex_.unlock();
+    }
+    //task();
   }
 }
 
@@ -183,7 +188,7 @@ void MinMax::createNode(const Board& board, int depth, Node* parent){
       tempBoard.update(opponent_,move.first,move.second);
     }
     if (newDepth == 0 || tempBoard.gameState() != NOTHING) {
-      //parent->updateMe(heuristic(tempBoard),move.first,move.second);
+      parent->updateMe(heuristic(tempBoard),move.first,move.second);
     }else{
       taskMutex_.lock();
       taskQueue_.push([this,tempBoard,newDepth,parent,move] {
@@ -196,10 +201,11 @@ void MinMax::createNode(const Board& board, int depth, Node* parent){
 
         std::cout << "create new node : " << node << " with parent : " << parent << '\n';
         std::cout << "task queue size = " << taskQueue_.size() << '\n';
-
+/*
         if (newDepth <= 1) {
           std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
+*/
         this->createNode(tempBoard,newDepth,node);
       });
       taskMutex_.unlock();
