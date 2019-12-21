@@ -12,7 +12,8 @@ typedef enum {
   PVP,
   PVRANDOM,
   PVAI,
-  AIVAI
+  AIVAI,
+  RANDVAI
 } gamemode;
 
 char StoStr(symbole signe);

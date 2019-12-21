@@ -25,7 +25,8 @@ void BobbyMinMax::Node::updateMe(int value, int grid, int cell){
     }
     nbChild_ -= 1;
     //std::cout << "node " << this << " has value = " << value_ << " with nbChild = " << nbChild_ << '\n';
-    nextUpdate = alphaBeta();
+    //nextUpdate = alphaBeta();
+    nextUpdate = this;
     nodeMutex_.unlock();
     if (nextUpdate != nullptr) {
       if (nextUpdate->nbChild_ == 0 && nextUpdate->parent_ != nullptr) {

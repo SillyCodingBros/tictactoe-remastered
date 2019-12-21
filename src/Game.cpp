@@ -21,14 +21,21 @@ Game::Game(gamemode mode){
     case PVAI:
       std::cout << "PvAI" << '\n';
       players_[0] = new User(CROSS, &board_);
-      players_[1] = new BobbyMinMax(CIRCLE, CROSS, &board_,6, 7);
+      players_[1] = new BobbyMinMax(CIRCLE, CROSS, &board_,3, 3);
       std::cout << "You, player 1 will use \"O\"\n"
                 << "AI plays with \"X\"" << '\n';
       break;
     case AIVAI:
-      std::cout << "PvAI" << '\n';
-      players_[0] = new BobbyMinMax(CROSS, CIRCLE, &board_, 1, 3);
-      players_[1] = new BobbyMinMax(CIRCLE, CROSS, &board_, 1, 3);
+      std::cout << "AIvAI" << '\n';
+      players_[0] = new BobbyMinMax(CROSS, CIRCLE, &board_, 4, 4);
+      players_[1] = new BobbyMinMax(CIRCLE, CROSS, &board_, 2, 4);
+      std::cout << "AI 1 plays with \"O\""
+                << "AI 2 plays with \"X\"" << '\n';
+      break;
+    case RANDVAI:
+      std::cout << "RANDVAI" << '\n';
+      players_[0] = new Random(CROSS, &board_);
+      players_[1] = new BobbyMinMax(CIRCLE, CROSS, &board_, 8, 8);
       std::cout << "AI 1 plays with \"O\""
                 << "AI 2 plays with \"X\"" << '\n';
       break;
@@ -48,8 +55,8 @@ void Game::launch(){
 
     if (!players_[playerTurn]->play()) {
       std::cout << "You can't play there" << '\n';
-      return ;
-      //continue ;
+      //return ;
+      continue ;
     }
     auto end = std::chrono::system_clock::now();
     auto timer = end - start;
