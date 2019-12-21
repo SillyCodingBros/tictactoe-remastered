@@ -17,6 +17,8 @@ private:
   Player* players_[2];
   Board board_;
 
+  void settings(int& nbThread, int& depth);
+
 public:
   Game(gamemode mode);
   void launch();

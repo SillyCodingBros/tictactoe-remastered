@@ -2,6 +2,7 @@
 
 // Création des joueurs selon le mode de jeu
 Game::Game(gamemode mode){
+  int nbThread, depth;
   board_ = Board();
   switch (mode) {
     case PVP:
@@ -21,46 +22,58 @@ Game::Game(gamemode mode){
       board_.draw();
       break;
     case PVAI:
+      settings(nbThread, depth);
       std::cout << "\n~~~ Player vs AI ~~~\n" << '\n';
       players_[0] = new User(CROSS, board_);
-      players_[1] = new MinMax(CIRCLE, CROSS, board_,        4, 6);
+      players_[1] = new MinMax(CIRCLE, CROSS, board_,        nbThread, depth);
       std::cout << "You, player 1 will use \"X\"\n"
                 << "AI plays with \"O\"\n" << '\n';
       board_.draw();
       break;
     case AIVAI:
       std::cout << "\n~~~ AI vs AI ~~~\n" << '\n';
-      players_[0] = new MinMax(CROSS, CIRCLE, board_,        4, 3);
-      players_[1] = new MinMax(CIRCLE, CROSS, board_,        4, 5);
+      std::cout << "Settings AI 1" << '\n';
+      settings(nbThread, depth);
+      players_[0] = new MinMax(CROSS, CIRCLE, board_,        nbThread, depth);
+      std::cout << "Settings AI 2" << '\n';
+      settings(nbThread, depth);
+      players_[1] = new MinMax(CIRCLE, CROSS, board_,        nbThread, depth);
       std::cout << "AI 1 plays with \"X\"\n"
                 << "AI 2 plays with \"O\"\n" << '\n';
       break;
     case RANDOMVAI:
+      settings(nbThread, depth);
       std::cout << "\n~~~ Random vs AI ~~~\n" << '\n';
       players_[0] = new Random(CROSS, board_);
-      players_[1] = new MinMax(CIRCLE, CROSS, board_,        4, 4);
+      players_[1] = new MinMax(CIRCLE, CROSS, board_,        nbThread, depth);
       std::cout << "Ramdom plays with \"X\"\n"
                 << "AI plays with \"O\"\n" << '\n';
       break;
     case PVBOBAI:
+      settings(nbThread, depth);
       std::cout << "\nPvAI\n" << '\n';
       players_[0] = new User(CROSS, board_);
-      players_[1] = new BobbyMinMax(CIRCLE, CROSS, board_,    4, 6);
+      players_[1] = new BobbyMinMax(CIRCLE, CROSS, board_,    nbThread, depth);
       std::cout << "You, player 1 will use \"X\"\n"
                 << "AI plays with \"O\"\n" << '\n';
       board_.draw();
       break;
     case BOBAIVBOBAI:
       std::cout << "\nAIvAI\n" << '\n';
-      players_[0] = new BobbyMinMax(CROSS, CIRCLE, board_,    4, 3);
-      players_[1] = new BobbyMinMax(CIRCLE, CROSS, board_,    4, 5);
+      std::cout << "Settings AI 1" << '\n';
+      settings(nbThread, depth);
+      players_[0] = new BobbyMinMax(CROSS, CIRCLE, board_,    nbThread, depth);
+      std::cout << "Settings AI 2" << '\n';
+      settings(nbThread, depth);
+      players_[1] = new BobbyMinMax(CIRCLE, CROSS, board_,    nbThread, depth);
       std::cout << "AI 1 plays with \"X\"\n"
                 << "AI 2 plays with \"O\"\n" << '\n';
       break;
     case RANDOMVBOBAI:
+      settings(nbThread, depth);
       std::cout << "\nRANDOMvAI\n" << '\n';
       players_[0] = new Random(CROSS, board_);
-      players_[1] = new BobbyMinMax(CIRCLE, CROSS, board_,    4, 4);
+      players_[1] = new BobbyMinMax(CIRCLE, CROSS, board_,    nbThread, depth);
       std::cout << "RANDOM 1 plays with \"X\"\n"
                 << "AI 2 plays with \"O\"\n" << '\n';
       break;
@@ -68,6 +81,27 @@ Game::Game(gamemode mode){
       std::cerr << "Error wrong gamemode : \'" << mode << "\'" << '\n';
       break;
   }
+}
+
+// Paramètres pour les IA (nombre de threads et profondeur)
+void Game::settings(int& nbThread, int& depth){
+  char choice;
+  int nbThread_(4), depth_(6);
+  std::cout << "Default values :\n\t4 threads\n\t6 of depth\n" <<
+            "Do you want to set thread and depth values (y/n) : ";
+  std::cin >> choice;
+  if (choice == 'y') {
+    std::cout << "Values for thread number and depth\n" <<
+                  "Enter (number, number) : ";
+    std::cin >> nbThread_ >> depth_;
+    while (nbThread_ < 1 || depth_ < 1) {
+      std::cout << "Values must be  > 1\n" <<
+                  "Enter (number, number) : ";
+      std::cin >> nbThread_ >> depth_;
+    }
+  }
+  nbThread = nbThread_;
+  depth = depth_;
 }
 
 // Boucle de jeu

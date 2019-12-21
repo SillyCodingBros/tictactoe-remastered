@@ -4,7 +4,7 @@
 int main(int argc, char const *argv[]) {
   int gameId;
 
-  std::cout << "Choose your opponent:\n\t" <<
+  std::cout << "Choose a gamemode:\n\t" <<
                 "1 - Local player\n\t"<<
                 "2 - Player vs Random\n\t"<<
                 "3 - Player vs AI\n\t"<<
@@ -17,7 +17,7 @@ int main(int argc, char const *argv[]) {
   std::cin >> gameId;
   while (gameId < 1 || gameId > 8) {
     std::cout << "Wrong number\n";
-    std::cout << "Choose your opponent:\n\t" <<
+    std::cout << "Choose a gamemode:\n\t" <<
                   "1 - Local player\n\t"<<
                   "2 - Player vs Random\n\t"<<
                   "3 - Player vs AI\n\t"<<
