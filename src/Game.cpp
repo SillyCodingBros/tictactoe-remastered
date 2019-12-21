@@ -42,6 +42,28 @@ Game::Game(gamemode mode){
       std::cout << "RANDOM 1 plays with \"X\"\n"
                 << "AI 2 plays with \"O\"\n" << '\n';
       break;
+    case PVBOBAI:
+      std::cout << "\nPvAI\n" << '\n';
+      players_[0] = new User(CROSS, board_);
+      players_[1] = new BobbyMinMax(CIRCLE, CROSS, board_,    4, 6);
+      std::cout << "You, player 1 will use \"X\"\n"
+                << "AI plays with \"O\"\n" << '\n';
+      board_.draw();
+      break;
+    case BOBAIVBOBAI:
+      std::cout << "\nAIvAI\n" << '\n';
+      players_[0] = new BobbyMinMax(CROSS, CIRCLE, board_,    4, 3);
+      players_[1] = new BobbyMinMax(CIRCLE, CROSS, board_,    4, 5);
+      std::cout << "AI 1 plays with \"X\"\n"
+                << "AI 2 plays with \"O\"\n" << '\n';
+      break;
+    case RANDOMVBOBAI:
+      std::cout << "\nRANDOMvAI\n" << '\n';
+      players_[0] = new Random(CROSS, board_);
+      players_[1] = new BobbyMinMax(CIRCLE, CROSS, board_,    4, 4);
+      std::cout << "RANDOM 1 plays with \"X\"\n"
+                << "AI 2 plays with \"O\"\n" << '\n';
+      break;
     default:
       std::cerr << "Error wrong gamemode : \'" << mode << "\'" << '\n';
       break;

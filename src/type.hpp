@@ -13,7 +13,10 @@ typedef enum {
   PVRANDOM,
   PVAI,
   AIVAI,
-  RANDOMVAI
+  RANDOMVAI,
+  PVBOBAI,
+  BOBAIVBOBAI,
+  RANDOMVBOBAI
 } gamemode;
 
 char StoStr(symbole signe);

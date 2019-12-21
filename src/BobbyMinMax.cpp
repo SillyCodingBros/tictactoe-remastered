@@ -1,7 +1,7 @@
 #include "BobbyMinMax.hpp"
 
 // Création d'un objet BobbyMinMax
-BobbyMinMax::BobbyMinMax(symbole signe, symbole opponent, Board* board, int nbThread, int depth)
+BobbyMinMax::BobbyMinMax(symbole signe, symbole opponent, Board& board, int nbThread, int depth)
               : IComputer(signe, board), opponent_(opponent), depth_(depth), nbThread_(nbThread){
 }
 
@@ -13,19 +13,15 @@ BobbyMinMax::Node::Node(Node* parent, int value, int grid, int cell) : parent_(p
 void BobbyMinMax::Node::updateMe(int value, int grid, int cell){
   Node* nextUpdate = this;
   nodeMutex_.lock();
-  //std::cout << "node in traitment : " << this << '\n';
   if (chemin()) {
     if (test(value)) {
       value_ = value;
       if (parent_ == nullptr) {
         grid_ = grid;
         cell_ = cell;
-        //std::cout << "origin " << this << " vaut : " << grid_ << ", " << cell_ << " when nbChild = " << nbChild_ << '\n';
       }
     }
     nbChild_ -= 1;
-    //std::cout << "node " << this << " has value = " << value_ << " with nbChild = " << nbChild_ << '\n';
-    //nextUpdate = alphaBeta();
     nextUpdate = this;
     nodeMutex_.unlock();
     if (nextUpdate != nullptr) {
@@ -50,7 +46,6 @@ BobbyMinMax::Node* BobbyMinMax::Node::alphaBeta(){
       if (!parent_->parent_->test(value_)) {
         parent_->parent_->nbChild_ -=1;
         parent_->nbChild_ = 0;
-        //std::cout << "elaguage success" << '\n';
         result = parent_->parent_;
       }
       parent_->parent_->nodeMutex_.unlock();
@@ -65,7 +60,6 @@ bool BobbyMinMax::Node::chemin(){
   Node* tmp = parent_;
   while (tmp != nullptr) {
     if (tmp->nbChild_ == 0) {
-      //std::cout << "branche elagué" << '\n';
       return false;
     }
     tmp = tmp->parent_;
@@ -126,27 +120,19 @@ bool BobbyMinMax::Max::isMax(){
   return true;
 }
 
-// Algorithme de choix de coup minmax
+/* Algorithme de choix de coup minmax */
 void BobbyMinMax::algorithm(int& grid, int& cell) {
   std::vector<std::thread> listThread;
   job_ = true;
-  Board tmp = *board_;
+  Board tmp = board_;
   Max origin(nullptr,0,0);
   createNode(tmp,depth_,&origin);
   for (int i = 0; i < nbThread_; i++) {
     listThread.emplace_back(&BobbyMinMax::funcThread,this);
   }
-  //std::cerr << "nbThread" << listThread.size() << '\n';
   while (origin.getNbChild() != 0) {
-/*
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    std::cerr << "child origin : " << origin.getNbChild() << '\n';
-    std::cerr << "list thread" << listThread.size() << '\n';
-*/
   }
-  //std::cerr << "job done" << '\n';
   job_ = false;
-  //std::cerr << "list thread" << listThread.size() << '\n';
   for (size_t i = 0; i < listThread.size(); i++) {
     listThread[i].join();
   }
@@ -158,8 +144,10 @@ void BobbyMinMax::algorithm(int& grid, int& cell) {
 void BobbyMinMax::funcThread() {
   std::function<void()> task;
 
+  /* on attend la fin des taches a faire */
   while (job_) {
     taskMutex_.lock();
+    /* on prend et on execute une tache a faire si on peut */
     if (!taskQueue_.empty()) {
       task = taskQueue_.front();
       taskQueue_.pop();
@@ -167,34 +155,20 @@ void BobbyMinMax::funcThread() {
       task();
     }
     else{
-      //std::cout << "wait taskQueue or job_" << '\n';
       taskMutex_.unlock();
     }
-    //task();
   }
 }
 
 /* Fonction de creation de Node destiner a la queue de tache a faire */
 void BobbyMinMax::createNode(const Board& board, int depth, Node* parent){
-/*
-  Board debug = board;
-  std::cout << "==============================================" << '\n';
-  debug.draw();
-  std::cout << "node :" << parent << '\n';
-  std::cout << "\t-depth : " << depth << '\n';
-  std::cout << "\t-value : " << parent->getValue() << '\n';
-  std::cout << "\t-cell : " << parent->getCell() << '\n';
-  std::cout << "\t-grid : " << parent->getGrid() << '\n';
-*/
   std::vector<std::pair<int,int>> moves;
   Board tempBoard = board;
   int newDepth = depth - 1;
+
   possibleMove(tempBoard,moves);
   parent->setNbChild(moves.size());
-/*
-  std::cout << "\t-nbChild : " << parent->getNbChild() << '\n';
-  std::cout << "==============================================" << '\n';
-*/
+
   for (size_t i = 0; i < moves.size(); i++) {
     std::pair<int,int> move = moves[i];
     tempBoard = board;
@@ -207,6 +181,7 @@ void BobbyMinMax::createNode(const Board& board, int depth, Node* parent){
       parent->updateMe(heuristic(tempBoard),move.first,move.second);
     }else{
       taskMutex_.lock();
+      /* on push les creations de noeuds pour qu'elle soit executer par d'autre threads */
       taskQueue_.push([this,tempBoard,newDepth,parent,move] {
         Node* node;
         if (parent->isMax()) {
@@ -214,14 +189,6 @@ void BobbyMinMax::createNode(const Board& board, int depth, Node* parent){
         }else{
           node = new Max(parent,move.first,move.second);
         }
-/*
-        std::cout << "create new node : " << node << " with parent : " << parent << '\n';
-        std::cout << "task queue size = " << taskQueue_.size() << '\n';
-
-        if (newDepth <= 1) {
-          std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        }
-*/
         this->createNode(tempBoard,newDepth,node);
       });
       taskMutex_.unlock();
@@ -229,7 +196,7 @@ void BobbyMinMax::createNode(const Board& board, int depth, Node* parent){
   }
 }
 
-// Heuristique de l'algorithme
+/* Heuristique de l'algorithme */
 int BobbyMinMax::heuristic(Board& board){
   int sum = 0;
   for (auto i=0; i < 9; ++i){

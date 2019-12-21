@@ -1,5 +1,5 @@
-#ifndef MINMAX_HPP
-#define MINMAX_HPP
+#ifndef BOBBYMINMAX_HPP
+#define BOBBYMINMAX_HPP
 
 #include <thread>
 #include <mutex>
@@ -87,7 +87,7 @@ private:
 
 public:
 
-  BobbyMinMax(symbole signe, symbole opponent, Board* board, int nbThread, int depth);
+  BobbyMinMax(symbole signe, symbole opponent, Board& board, int nbThread, int depth);
 };
 
-#endif /* end of include guard: MINMAX_HPP */
+#endif /* end of include guard: BOBBYMINMAX_HPP */
