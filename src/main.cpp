@@ -17,7 +17,7 @@ int main(int argc, char const *argv[]) {
     std::cout << "Choose your opponent:\n\t" <<
                   "1 - Local player\n\t"<<
                   "2 - Player vs Random\n\t"<<
-                  "3 - PLayer vs AI\n"<<
+                  "3 - Player vs AI\n"<<
                   "4 - AI vs AI\n"<<
                   "5 - Random vs AI\n"<<
                   "\nEnter the number: ";
