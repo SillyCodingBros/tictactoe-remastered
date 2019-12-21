@@ -11,7 +11,7 @@
 
 #include "IComputer.hpp"
 
-class MinMax : public IComputer {
+class BobbyMinMax : public IComputer {
 private:
 
   class Node {
@@ -87,7 +87,7 @@ private:
 
 public:
 
-  MinMax(symbole signe, symbole opponent, Board* board, int nbThread, int depth);
+  BobbyMinMax(symbole signe, symbole opponent, Board* board, int nbThread, int depth);
 };
 
 #endif /* end of include guard: MINMAX_HPP */

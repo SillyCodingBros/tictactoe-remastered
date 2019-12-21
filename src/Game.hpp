@@ -8,7 +8,7 @@
 #include "Board.hpp"
 #include "Player.hpp"
 #include "Random.hpp"
-#include "MinMax.hpp"
+#include "BobbyMinMax.hpp"
 #include "type.hpp"
 
 class Game {

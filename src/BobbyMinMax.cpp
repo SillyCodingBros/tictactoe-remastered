@@ -1,16 +1,16 @@
-#include "MinMax.hpp"
+#include "BobbyMinMax.hpp"
 
-// Création d'un objet MinMax
-MinMax::MinMax(symbole signe, symbole opponent, Board* board, int nbThread, int depth)
+// Création d'un objet BobbyMinMax
+BobbyMinMax::BobbyMinMax(symbole signe, symbole opponent, Board* board, int nbThread, int depth)
               : IComputer(signe, board), opponent_(opponent), depth_(depth), nbThread_(nbThread){
 }
 
 /* constructeur de Node */
-MinMax::Node::Node(Node* parent, int value, int grid, int cell) : parent_(parent), value_(value), grid_(grid), cell_(cell){
+BobbyMinMax::Node::Node(Node* parent, int value, int grid, int cell) : parent_(parent), value_(value), grid_(grid), cell_(cell){
 }
 
 /* Fonction pour update le node avec une nouvelle valeur */
-void MinMax::Node::updateMe(int value, int grid, int cell){
+void BobbyMinMax::Node::updateMe(int value, int grid, int cell){
   Node* nextUpdate = this;
   nodeMutex_.lock();
   //std::cout << "node in traitment : " << this << '\n';
@@ -39,7 +39,7 @@ void MinMax::Node::updateMe(int value, int grid, int cell){
 }
 
 /* Fonction d'elaguage */
-MinMax::Node* MinMax::Node::alphaBeta(){
+BobbyMinMax::Node* BobbyMinMax::Node::alphaBeta(){
   Node* result = nullptr;
   if (parent_ != nullptr) {
     result = this;
@@ -60,7 +60,7 @@ MinMax::Node* MinMax::Node::alphaBeta(){
 }
 
 /* fonction qui test si la branche actuelle est élagué */
-bool MinMax::Node::chemin(){
+bool BobbyMinMax::Node::chemin(){
   Node* tmp = parent_;
   while (tmp != nullptr) {
     if (tmp->nbChild_ == 0) {
@@ -73,67 +73,67 @@ bool MinMax::Node::chemin(){
 }
 
 /* setter de la variable nbChild_ */
-void MinMax::Node::setNbChild(int nbChild){
+void BobbyMinMax::Node::setNbChild(int nbChild){
   nbChild_ = nbChild;
 }
 
 /* getter de la variable nbChild_ */
-int MinMax::Node::getNbChild(){
+int BobbyMinMax::Node::getNbChild(){
   return nbChild_;
 }
 
 /* getter de la variable value_ */
-int MinMax::Node::getValue(){
+int BobbyMinMax::Node::getValue(){
   return value_;
 }
 
 /* getter de la variable cell_ */
-int MinMax::Node::getCell(){
+int BobbyMinMax::Node::getCell(){
   return cell_;
 }
 
 /* getter de la variable grid_ */
-int MinMax::Node::getGrid(){
+int BobbyMinMax::Node::getGrid(){
   return grid_;
 }
 
 /* constructeur de Min */
-MinMax::Min::Min(Node* parent, int grid, int cell) : Node(parent,INT_MAX,grid,cell){
+BobbyMinMax::Min::Min(Node* parent, int grid, int cell) : Node(parent,INT_MAX,grid,cell){
 }
 
 /* test utiliser par Min */
-bool MinMax::Min::test(int value){
+bool BobbyMinMax::Min::test(int value){
   return value_ > value;
 }
 
 /* informe que la classe est Min */
-bool MinMax::Min::isMax(){
+bool BobbyMinMax::Min::isMax(){
   return false;
 }
 
 /* constructeur de Max */
-MinMax::Max::Max(Node* parent, int cell, int grid) : Node(parent,INT_MIN,cell,grid){
+BobbyMinMax::Max::Max(Node* parent, int cell, int grid) : Node(parent,INT_MIN,cell,grid){
 }
 
 /* test utiliser par Max */
-bool MinMax::Max::test(int value){
+bool BobbyMinMax::Max::test(int value){
   return value_ < value;
 }
 
 /* informe que la classe est Max */
-bool MinMax::Max::isMax(){
+bool BobbyMinMax::Max::isMax(){
   return true;
 }
 
 // Algorithme de choix de coup minmax
-void MinMax::algorithm(int& grid, int& cell) {
+void BobbyMinMax::algorithm(int& grid, int& cell) {
   std::vector<std::thread> listThread;
   job_ = true;
   Board tmp = *board_;
   Max origin(nullptr,0,0);
   createNode(tmp,depth_,&origin);
   for (int i = 0; i < nbThread_; i++) {
-    listThread.emplace_back(&MinMax::funcThread,this);
+    listThread.emplace_back(&BobbyMinMax::funcThread,this);
   }
   //std::cerr << "nbThread" << listThread.size() << '\n';
   while (origin.getNbChild() != 0) {
@@ -154,7 +154,7 @@ void MinMax::algorithm(int& grid, int& cell) {
 }
 
 /* Fonction des threads */
-void MinMax::funcThread() {
+void BobbyMinMax::funcThread() {
   std::function<void()> task;
 
   while (job_) {
@@ -174,7 +174,7 @@ void MinMax::funcThread() {
 }
 
 /* Fonction de creation de Node destiner a la queue de tache a faire */
-void MinMax::createNode(const Board& board, int depth, Node* parent){
+void BobbyMinMax::createNode(const Board& board, int depth, Node* parent){
 /*
   Board debug = board;
   std::cout << "==============================================" << '\n';
@@ -229,7 +229,7 @@ void MinMax::createNode(const Board& board, int depth, Node* parent){
 }
 
 // Heuristique de l'algorithme
-int MinMax::heuristic(Board& board){
+int BobbyMinMax::heuristic(Board& board){
   int sum = 0;
   for (auto i=0; i < 9; ++i){
     for (auto j=0; j < 8; ++j){
@@ -244,7 +244,7 @@ int MinMax::heuristic(Board& board){
 
 // Retourne le poids associé à une ligne*
 //*(Somme des valeurs associées aux symboles qui la compose)
-int MinMax::evaluateLine(int line){
+int BobbyMinMax::evaluateLine(int line){
   if (line == -1){
     return 0;
   }
@@ -265,7 +265,7 @@ int MinMax::evaluateLine(int line){
 
 
 // Associe une valeur à un symbole
-int MinMax::caseValue(symbole cell){
+int BobbyMinMax::caseValue(symbole cell){
   if (cell == getSymbole()) {
     return 1;
   }
@@ -281,7 +281,7 @@ int MinMax::caseValue(symbole cell){
   /!\ Fonction PARFAITE /!\
   Retourne la liste des coups possibles pour une grille donnée
 */
-void MinMax::possibleMove(Board& board, std::vector<std::pair<int,int>>& move){
+void BobbyMinMax::possibleMove(Board& board, std::vector<std::pair<int,int>>& move){
   int curGrid = board.getCurGrid();
 
   if (curGrid == -1) {
