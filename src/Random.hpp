@@ -14,5 +14,4 @@ public:
   Random(symbole signe, Board& board);
 };
 
-
 #endif /* end of include guard: RANDOM_HPP */

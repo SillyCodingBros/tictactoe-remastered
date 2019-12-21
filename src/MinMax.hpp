@@ -5,12 +5,10 @@
 #include <mutex>
 #include <climits>
 #include <vector>
-#include <queue>
 #include <list>
 #include <functional>
 #include <chrono>
 #include <cassert>
-#include <memory>
 
 #include "IComputer.hpp"
 
@@ -29,24 +27,19 @@ private:
 
     std::mutex nodeMutex_;
 
-  //public:
     void update(int value, int grid, int cell);
-    //void createChildren(Node* parent, Board& board, int depth);
 
-  //public:
-    //int getGrid();
-    //int getCell();
     Node(int min);
     Node(Node* parent, int value, bool max, int grid, int cell);
   };
 
 public :
 
-  bool end_;
   bool game_;
+
+  bool end_;
   std::mutex endMutex_;
 
-  std::mutex originMutex_;
   Node* origin_;
 
   symbole opponent_;
@@ -56,9 +49,6 @@ public :
   std::vector<std::thread> threads_;
   std::list<std::function<void()>> taskQueue_;
   std::mutex taskMutex_;
-
-  //std::mutex countMutex_;
-  //int count_;
 
   int INFINITE_MAX = INT_MAX;
   int INFINITE_MIN = INT_MIN;
@@ -89,8 +79,6 @@ public :
   void completeATask();
 
   symbole getSymbole();
-
-//public:
 
   MinMax(symbole signe, symbole opponent, Board& board, int nbThread, int depth);
 
